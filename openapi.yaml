@@ -1,0 +1,411 @@
+openapi: "3.0.0"
+info:
+  description: "読書記録Webアプリのバックエンド。"
+  version: "0.1.0"
+  title: "Book Record Backend"
+  contact:
+    email: "hiyoko3m.tech@gmail.com"
+servers:
+- url: "http://localhost:8000/v1"
+  description: "For local development"
+tags:
+- name: "user"
+  description: "ユーザ操作"
+- name: "book"
+  description: "本のCRUD系API"
+- name: "record"
+  description: "読書記録のCRUD系API"
+paths:
+  /user:
+    post:
+      tags:
+      - "user"
+      summary: "ユーザ作成"
+      description: "サインアップ時にユーザを作成するためのエンドポイント"
+      operationId: "createUser"
+      requestBody:
+        description: "ユーザ情報"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        200:
+          description: "成功時"
+      security:
+      - openId: []
+  /user/login:
+    get:
+      tags:
+      - "user"
+      summary: "ログイン"
+      description: "システムへのユーザログイン"
+      operationId: "login"
+      parameters:
+      - name: "username"
+        in: "query"
+        description: "ユーザ名"
+        required: true
+        schema:
+          type: "string"
+      - name: "password"
+        in: "query"
+        description: "パスワード"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "成功時"
+        "400":
+          description: "無効なユーザ名/パスワード"
+  /books:
+    get:
+      tags:
+      - "book"
+      summary: "登録された本の一覧取得"
+      operationId: "listBooks"
+      responses:
+        "200":
+          description: "成功時"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  books:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/Book"
+      security:
+      - openId: []
+  /book:
+    post:
+      tags:
+      - "book"
+      summary: "新しい本の登録"
+      operationId: "createBook"
+      requestBody:
+        description: "登録する本のオブジェクト"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Book"
+      responses:
+        "200":
+          description: "成功時"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+  /book/{bookId}:
+    get:
+      tags:
+      - "book"
+      summary: "本の情報の詳細取得"
+      operationId: "getBookById"
+      parameters:
+      - name: "bookId"
+        in: "path"
+        description: "本のID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int32"
+      responses:
+        "200":
+          description: "成功時"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "404":
+          description: "存在しない本のID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+    post:
+      tags:
+      - "book"
+      summary: "本の情報のフォームからの更新"
+      operationId: "updateBookWithForm"
+      parameters:
+      - name: "bookId"
+        in: "path"
+        description: "更新する本のID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int32"
+      requestBody:
+        description: "本の書名"
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: "string"
+      responses:
+        "200":
+          description: "成功時"
+        "404":
+          description: "存在しない本のID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+    delete:
+      tags:
+      - "book"
+      summary: "本の削除"
+      operationId: "deleteBook"
+      parameters:
+      - name: "bookId"
+        in: "path"
+        description: "本のID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int32"
+      responses:
+        "200":
+          description: "成功時"
+        "404":
+          description: "存在しない本のID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+  /records:
+    get:
+      tags:
+      - "record"
+      summary: "読書記録の一覧取得"
+      description: "条件に合う読書記録を全て表示する"
+      operationId: "listRecords"
+      parameters:
+      - name: "userIds"
+        in: "query"
+        description: "表示対象のユーザID配列"
+        schema:
+          type: "array"
+          items:
+            type: "integer"
+            format: "int32"
+      - name: "bookIds"
+        in: "query"
+        description: "表示対象の本のID配列"
+        schema:
+          type: "array"
+          items:
+            type: "integer"
+            format: "int32"
+      - name: "sinceDatetime"
+        in: "query"
+        description: "この時刻以降の読書記録を表示する（等号を含む）"
+        schema:
+          type: "string"
+          format: "date-time"
+      - name: "untilDatetime"
+        in: "query"
+        description: "この時刻以前の読書記録を表示する（等号を含まない）"
+        schema:
+          type: "string"
+          format: "date-time"
+      responses:
+        "200":
+          description: "成功時"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  records:
+                    type: "array"
+                    items:
+                      $ref: "#/components/schemas/Record"
+      security:
+      - openId: []
+  /record:
+    post:
+      tags:
+      - "record"
+      summary: "読書記録の新規登録"
+      operationId: "createRecord"
+      requestBody:
+        description: "登録する読書記録情報"
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RecordForm"
+      responses:
+        "200":
+          description: "成功時"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+  /record/{recordId}:
+    get:
+      tags:
+      - "record"
+      summary: "読書記録の詳細取得"
+      operationId: "getRecord"
+      parameters:
+      - name: "recordId"
+        in: "path"
+        required: true
+        description: "詳細表示する読書記録ID"
+        schema:
+          type: "integer"
+          format: "int32"
+      responses:
+        "200":
+          description: "成功時"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Record"
+        "404":
+          description: "存在しない読書記録ID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+    post:
+      tags:
+      - "record"
+      summary: "読書記録のフォームからの更新"
+      operationId: "udpateRecord"
+      parameters:
+      - name: "recordId"
+        in: "path"
+        required: true
+        description: "変更する読書記録ID"
+        schema:
+          type: "integer"
+          format: "int32"
+      requestBody:
+        description: "変更する読書記録情報"
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/RecordForm"
+      responses:
+        "200":
+          description: "成功時"
+        "404":
+          description: "存在しない読書記録ID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+    delete:
+      tags:
+      - "record"
+      summary: "読書記録の削除"
+      operationId: "deleteRecord"
+      parameters:
+      - name: "recordId"
+        in: "path"
+        required: true
+        description: "削除する読書記録ID"
+        schema:
+          type: "integer"
+          format: "int32"
+      responses:
+        "200":
+          description: "成功時"
+        "404":
+          description: "存在しない本のID"
+        "422":
+          description: "無効な入力"
+      security:
+      - openId: []
+components:
+  securitySchemes:
+    openId:
+      type: "openIdConnect"
+      openIdConnectUrl: "https://accounts.google.com/.well-known/openid-configuration"
+  schemas:
+    User:
+      type: "object"
+      required:
+      - "username"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        username:
+          type: "string"
+    Book:
+      type: "object"
+      required:
+      - "title"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        title:
+          type: "string"
+    RecordForm:
+      type: "object"
+      required:
+      - "bookId"
+      - "startPage"
+      - "endPage"
+      properties:
+        bookId:
+          description: "読んだ本のID"
+          type: "integer"
+          format: "int32"
+        startPage:
+          description: "開始ページ"
+          type: "integer"
+          format: "int32"
+        endPage:
+          description: "終了ページ"
+          type: "integer"
+          format: "int32"
+        comment:
+          description: "備考・コメント"
+          type: "string"
+    Record:
+      type: "object"
+      required:
+      - "userId"
+      - "bookId"
+      - "startPage"
+      - "endPage"
+      - "registeredDatetime"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        userId:
+          description: "読書したユーザID"
+          type: "integer"
+          format: "int32"
+        bookId:
+          description: "読んだ本のID"
+          type: "integer"
+          format: "int32"
+        startPage:
+          description: "開始ページ"
+          type: "integer"
+          format: "int32"
+        endPage:
+          description: "終了ページ"
+          type: "integer"
+          format: "int32"
+        registeredDatetime:
+          description: "記録の登録日時"
+          type: "string"
+          format: "date-time"
+        comment:
+          description: "備考・コメント"
+          type: "string"
