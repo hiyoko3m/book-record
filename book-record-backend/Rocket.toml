@@ -1,0 +1,2 @@
+[global.databases]
+sqlite_book_record = { url = "./database.sqlite" }
