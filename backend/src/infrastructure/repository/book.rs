@@ -1,30 +1,36 @@
-use rocket::outcome::try_outcome;
-use rocket::request::{FromRequest, Outcome, Request};
-use rocket_sync_db_pools::diesel::RunQueryDsl;
+use axum::{
+    async_trait,
+    extract::{FromRequest, RequestParts},
+    http::StatusCode,
+};
 
-use super::connection::BookRecordMysqlConn;
+use diesel::RunQueryDsl;
+
+use super::connection::DatabaseConnection;
 use crate::domain::entity::book::BookEntity;
 use crate::domain::repository_interface::book::BookRepositoryInterface;
 
 pub struct BookRepository {
-    conn: BookRecordMysqlConn,
+    conn: DatabaseConnection,
 }
 
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for BookRepository {
-    type Error = ();
+#[async_trait]
+impl<B> FromRequest<B> for BookRepository
+where
+    B: Send,
+{
+    type Rejection = (StatusCode, String);
 
-    async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let conn = try_outcome!(req.guard::<BookRecordMysqlConn>().await);
-        Outcome::Success(Self { conn })
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let conn = DatabaseConnection::from_request(req).await?;
+        Ok(Self { conn })
     }
 }
 
-#[rocket::async_trait]
+#[async_trait]
 impl BookRepositoryInterface for BookRepository {
     async fn list_books(&self) -> Vec<BookEntity> {
         use super::schema::books::dsl::*;
-        let res = self.conn.run(|c| books.load::<BookEntity>(c)).await;
-        res.unwrap_or(vec![])
+        books.load::<BookEntity>(&*self.conn.0).unwrap_or(vec![])
     }
 }

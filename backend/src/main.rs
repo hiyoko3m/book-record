@@ -1,23 +1,27 @@
 mod controller;
 mod domain;
 mod infrastructure;
+mod utils;
 
-// 本当はrocket_sync_db_poolsの中のdieselと被るので
-// extern crateしたくないのだが、
-// schema.rsのコンパイルを通すときには現実的な解はこれしかなさそう
 #[macro_use]
 extern crate diesel;
 
-use dotenv::dotenv;
-use rocket::{launch, routes};
+use axum::AddExtensionLayer;
+use bb8::Pool;
+use bb8_diesel::DieselConnectionManager;
+use diesel::pg::PgConnection;
 
-use self::controller::book::list_books;
-use self::infrastructure::repository::connection::BookRecordMysqlConn;
+use self::controller::book::book_app;
 
-#[launch]
-fn app() -> _ {
-    dotenv().ok();
-    rocket::build()
-        .attach(BookRecordMysqlConn::fairing())
-        .mount("/", routes![list_books])
+#[tokio::main]
+async fn main() {
+    let manager = DieselConnectionManager::<PgConnection>::new("localhost:5432");
+    let pool = Pool::builder().build(manager).await.unwrap();
+
+    let app = book_app().layer(AddExtensionLayer::new(pool));
+
+    axum::Server::bind(&"0.0.0.0:8000".parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }

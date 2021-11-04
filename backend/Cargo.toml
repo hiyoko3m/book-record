@@ -1,16 +1,19 @@
 [package]
 name = "book-record"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = { version = "0.5.0-rc.1", features = ["json"] }
-diesel = "1.4.8"
-dotenv = "0.15.0"
+axum = { version = "^0.2.8", features = ["headers"] }
+tokio = { version = "^1.12.0", features = ["macros", "rt-multi-thread"] }
+tower = { version = "^0.4.10", features = [] }
+tower-http = { version = "^0.1.1", features = ["fs"] }
+hyper = "^0.14.14"
+serde = { version = "^1.0.130", features = ["derive"] }
+serde_json = "^1.0.59"
 
-[dependencies.rocket_sync_db_pools]
-version = "0.1.0-rc.1"
-default-features = false
-features = ["diesel_mysql_pool"]
+diesel = { version = "^1.4.8", features = ["postgres", "chrono", "r2d2"] }
+bb8 = "^0.7.1"
+bb8-diesel = "^0.2.1"

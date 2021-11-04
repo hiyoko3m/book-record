@@ -1,3 +1,0 @@
-[default.databases]
-db_book_record = { url = "mysql://dummy:dummy@127.0.0.1/rocket" }
-
