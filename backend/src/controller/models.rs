@@ -1,22 +1,25 @@
-use serde::Serialize;
+use serde::Deserialize;
 
-use crate::domain::entity::book::BookEntity;
+use crate::domain::entity::book::{BookEntity, BookEntityForCreate};
 
-#[derive(Debug, Serialize)]
-pub struct Book {
-    id: i32,
+#[derive(Debug, Deserialize)]
+pub struct BookExtract {
     title: String,
-    body: String,
-    published: bool,
 }
 
-impl From<BookEntity> for Book {
-    fn from(book_entity: BookEntity) -> Self {
+impl From<BookExtract> for BookEntityForCreate {
+    fn from(book_extract: BookExtract) -> BookEntityForCreate {
         Self {
-            id: book_entity.id,
-            title: book_entity.title,
-            body: book_entity.body,
-            published: book_entity.published,
+            title: book_extract.title,
+        }
+    }
+}
+
+impl From<(u32, BookExtract)> for BookEntity {
+    fn from((id, book_extract): (u32, BookExtract)) -> BookEntity {
+        Self {
+            id: id,
+            title: book_extract.title,
         }
     }
 }

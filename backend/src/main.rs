@@ -3,24 +3,27 @@ mod domain;
 mod infrastructure;
 mod utils;
 
-#[macro_use]
-extern crate diesel;
+use std::net::SocketAddr;
 
 use axum::AddExtensionLayer;
-use bb8::Pool;
-use bb8_diesel::DieselConnectionManager;
-use diesel::pg::PgConnection;
+use sqlx::postgres::PgPool;
 
 use self::controller::book::book_app;
 
 #[tokio::main]
 async fn main() {
-    let manager = DieselConnectionManager::<PgConnection>::new("localhost:5432");
-    let pool = Pool::builder().build(manager).await.unwrap();
+    tracing_subscriber::fmt::init();
+
+    let pool = PgPool::connect("postgres://hyo:hyo@localhost/book_record")
+        .await
+        .unwrap();
 
     let app = book_app().layer(AddExtensionLayer::new(pool));
 
-    axum::Server::bind(&"0.0.0.0:8000".parse().unwrap())
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
+    tracing::info!("listening on {}", addr);
+
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();

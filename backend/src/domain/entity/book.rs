@@ -1,9 +1,12 @@
-use diesel::Queryable;
+use serde::Serialize;
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Serialize)]
 pub struct BookEntity {
-    pub id: i32,
+    pub id: u32,
     pub title: String,
-    pub body: String,
-    pub published: bool,
+}
+
+#[derive(Debug)]
+pub struct BookEntityForCreate {
+    pub title: String,
 }

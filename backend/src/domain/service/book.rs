@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
 };
 
-use super::super::entity::book::BookEntity;
+use super::super::entity::book::{BookEntity, BookEntityForCreate};
 use super::super::repository_interface::book::BookRepositoryInterface;
 use crate::infrastructure::repository::book::BookRepository;
 
@@ -25,14 +25,26 @@ where
     }
 }
 
-#[async_trait]
-pub trait Listable {
-    async fn list_books(&self) -> Vec<BookEntity>;
-}
-
-#[async_trait]
-impl Listable for BookService {
-    async fn list_books(&self) -> Vec<BookEntity> {
+impl BookService {
+    pub async fn list_books(&self) -> Vec<BookEntity> {
         self.book_repository.list_books().await
+    }
+
+    pub async fn get_book(&self, book_id: u32) -> Option<BookEntity> {
+        self.book_repository.get_book(book_id).await
+    }
+
+    pub async fn create_book(&self, book: BookEntityForCreate) -> Result<u32, ()> {
+        self.book_repository.create_book(book).await
+    }
+
+    /// Return: true indicates that the update operation was succeeded.
+    pub async fn update_book(&self, book: BookEntity) -> bool {
+        self.book_repository.update_book(book).await
+    }
+
+    /// Return: true indicates that the delete operation was succeeded.
+    pub async fn delete_book(&self, book_id: u32) -> bool {
+        self.book_repository.delete_book(book_id).await
     }
 }
