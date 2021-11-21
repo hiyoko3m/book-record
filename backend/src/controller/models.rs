@@ -1,6 +1,14 @@
+use axum::{
+    body::Body,
+    http::{Response, StatusCode},
+    response::IntoResponse,
+};
 use serde::Deserialize;
 
-use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
+use crate::domain::entity::{
+    book::{BookEntity, BookEntityForCreation},
+    user::{AccessToken, RefreshToken},
+};
 
 #[derive(Debug, Deserialize)]
 pub struct BookExtract {
@@ -21,5 +29,36 @@ impl From<(u32, BookExtract)> for BookEntity {
             id: id,
             title: book_extract.title,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct CredTokens {
+    refresh_token: RefreshToken,
+    access_token: AccessToken,
+}
+
+impl From<(RefreshToken, AccessToken)> for CredTokens {
+    fn from((refresh_token, access_token): (RefreshToken, AccessToken)) -> CredTokens {
+        Self {
+            refresh_token,
+            access_token,
+        }
+    }
+}
+
+impl IntoResponse for CredTokens {
+    type Body = Body;
+    type BodyError = <Self::Body as axum::body::HttpBody>::Error;
+
+    fn into_response(self) -> Response<Self::Body> {
+        unimplemented!();
+        /*
+        let cookie_value = format!(
+            "refresh_token={}; Expires={}; Path=/; HttpOnly",
+            refresh_token.token,
+            refresh_token.expires_at.to_rfc2822()
+        );
+        (Headers(vec![("Set-Cookie", cookie_value)]), access_token.0)*/
     }
 }

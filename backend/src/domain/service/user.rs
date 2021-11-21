@@ -4,6 +4,11 @@ use axum::{
     http::StatusCode,
 };
 
+use crate::domain::entity::{
+    user::{AccessToken, IdTokenError, RefreshToken},
+    PID,
+};
+use crate::domain::repository_interface::user::UserRepositoryInterface;
 use crate::infrastructure::repository::user::UserRepository;
 
 pub struct UserService {
@@ -23,4 +28,15 @@ where
     }
 }
 
-impl UserService {}
+impl UserService {
+    pub async fn issue_nonce(&self) -> String {
+        self.user_repository.issue_nonce().await
+    }
+
+    pub async fn login(
+        &self,
+        id_token: String,
+    ) -> Result<(RefreshToken, AccessToken), IdTokenError> {
+        unimplemented!();
+    }
+}

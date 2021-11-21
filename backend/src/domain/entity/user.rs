@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use super::PID;
@@ -17,10 +18,14 @@ pub struct UserEntityForCreation {
 
 #[derive(Debug)]
 pub struct RefreshToken {
-    token: String,
+    pub token: String,
+    pub expires_at: DateTime<Utc>,
 }
 
 #[derive(Debug)]
-pub struct AccessToken {
-    token: String,
+pub struct AccessToken(pub String);
+
+pub enum IdTokenError {
+    InvalidIdToken,
+    NonexistUser(String), // signup token
 }
