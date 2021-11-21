@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
 };
 
-use super::super::entity::book::{BookEntity, BookEntityForCreate};
+use super::super::entity::book::{BookEntity, BookEntityForCreation};
 use super::super::repository_interface::book::BookRepositoryInterface;
 use crate::infrastructure::repository::book::BookRepository;
 
@@ -34,7 +34,7 @@ impl BookService {
         self.book_repository.get_book(book_id).await
     }
 
-    pub async fn create_book(&self, book: BookEntityForCreate) -> Result<u32, ()> {
+    pub async fn create_book(&self, book: BookEntityForCreation) -> Result<u32, ()> {
         self.book_repository.create_book(book).await
     }
 

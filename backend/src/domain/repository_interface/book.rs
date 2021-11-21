@@ -1,5 +1,6 @@
-use super::super::entity::book::{BookEntity, BookEntityForCreate};
 use axum::async_trait;
+
+use super::super::entity::book::{BookEntity, BookEntityForCreation};
 
 #[async_trait]
 pub trait BookRepositoryInterface {
@@ -7,7 +8,7 @@ pub trait BookRepositoryInterface {
 
     async fn get_book(&self, book_id: u32) -> Option<BookEntity>;
 
-    async fn create_book(&self, book: BookEntityForCreate) -> Result<u32, ()>;
+    async fn create_book(&self, book: BookEntityForCreation) -> Result<u32, ()>;
 
     /// Return: true indicates that the update operation was succeeded.
     async fn update_book(&self, book: BookEntity) -> bool;

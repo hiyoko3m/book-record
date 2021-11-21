@@ -5,7 +5,7 @@ use axum::{
 };
 use sqlx::{postgres::PgPool, Row};
 
-use crate::domain::entity::book::{BookEntity, BookEntityForCreate};
+use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
 use crate::domain::repository_interface::book::BookRepositoryInterface;
 use crate::infrastructure::repository::schema::BookRow;
 use crate::utils::error;
@@ -61,7 +61,7 @@ impl BookRepositoryInterface for BookRepository {
             .ok()
     }
 
-    async fn create_book(&self, book: BookEntityForCreate) -> Result<u32, ()> {
+    async fn create_book(&self, book: BookEntityForCreation) -> Result<u32, ()> {
         let mut transaction = self.pool.begin().await.map_err(|err| {
             tracing::info!("cannot establish transaction: {}", err);
             ()

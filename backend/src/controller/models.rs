@@ -1,14 +1,14 @@
 use serde::Deserialize;
 
-use crate::domain::entity::book::{BookEntity, BookEntityForCreate};
+use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
 
 #[derive(Debug, Deserialize)]
 pub struct BookExtract {
     title: String,
 }
 
-impl From<BookExtract> for BookEntityForCreate {
-    fn from(book_extract: BookExtract) -> BookEntityForCreate {
+impl From<BookExtract> for BookEntityForCreation {
+    fn from(book_extract: BookExtract) -> BookEntityForCreation {
         Self {
             title: book_extract.title,
         }
