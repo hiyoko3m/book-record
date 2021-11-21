@@ -3,7 +3,6 @@ use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
 };
-
 use sqlx::{postgres::PgPool, Row};
 
 use crate::domain::entity::book::{BookEntity, BookEntityForCreate};
