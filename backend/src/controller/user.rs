@@ -43,16 +43,16 @@ fn response_from_tokens(
 
 async fn login(
     user_service: UserService,
-    id_token: String,
+    code: String,
     Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     user_service
-        .login(id_token)
+        .login(code)
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
-            LoginError::NonexistUser(token) => (StatusCode::BAD_REQUEST, token.raw()),
-            LoginError::InvalidIdToken => (StatusCode::FORBIDDEN, String::new()),
+            LoginError::NonexistUser(code) => (StatusCode::BAD_REQUEST, code.raw()),
+            LoginError::InvalidCode => (StatusCode::FORBIDDEN, String::new()),
         })
 }
 
@@ -62,12 +62,12 @@ async fn sign_up(
     Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, StatusCode> {
     user_service
-        .sign_up(payload.token, payload.user)
+        .sign_up(payload.code, payload.user)
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
             SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
-            SignUpError::InvalidSignUpToken => StatusCode::FORBIDDEN,
+            SignUpError::InvalidCode => StatusCode::FORBIDDEN,
         })
 }
 

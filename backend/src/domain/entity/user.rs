@@ -16,27 +16,25 @@ pub struct UserEntityForCreation {
 }
 
 pub enum LoginError {
-    InvalidIdToken,
-    NonexistUser(SignUpToken),
+    InvalidCode,
+    NonexistUser(SignUpCode),
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SignUpToken(String);
+pub struct SignUpCode(String);
 
-impl SignUpToken {
+impl SignUpCode {
+    pub fn new() -> Self {
+        Self(String::new())
+    }
+
     pub fn raw(self) -> String {
         self.0
     }
 }
 
-impl SignUpToken {
-    pub fn new() -> Self {
-        Self(String::new())
-    }
-}
-
 pub enum SignUpError {
-    InvalidSignUpToken,
+    InvalidCode,
     DuplicatedUser,
 }
 
@@ -82,6 +80,6 @@ mod tests {
         let expected =
             "refresh_token=t0ken; Expires=Sat, 01 Jan 2000 00:01:01 +0000; Path=/; HttpOnly";
 
-        assert_eq!(refresh_token.into_cookie_value(), expected);
+        assert_eq!(refresh_token.into_cookie_value("refresh_token"), expected);
     }
 }

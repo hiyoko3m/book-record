@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::domain::entity::user::{SignUpToken, UserEntityForCreation};
+use crate::domain::entity::user::{SignUpCode, UserEntityForCreation};
 
 pub struct Settings {
     pub refresh_token_cookie_name: String,
@@ -16,6 +16,6 @@ impl Default for Settings {
 
 #[derive(Debug, Deserialize)]
 pub struct SignUpExtract {
-    pub token: SignUpToken,
+    pub code: SignUpCode,
     pub user: UserEntityForCreation,
 }

@@ -8,7 +8,7 @@ use chrono::{TimeZone, Utc};
 use crate::domain::entity::{
     user::{
         AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract,
-        SignUpError, SignUpToken, UserEntityForCreation,
+        SignUpCode, SignUpError, UserEntityForCreation,
     },
     PID,
 };
@@ -37,18 +37,18 @@ impl UserService {
         self.user_repository.issue_nonce().await
     }
 
-    pub async fn login(&self, id_token: String) -> Result<(RefreshToken, AccessToken), LoginError> {
+    pub async fn login(&self, code: String) -> Result<(RefreshToken, AccessToken), LoginError> {
         unimplemented!();
     }
 
     pub async fn sign_up(
         &self,
-        sign_up_token: SignUpToken,
+        code: SignUpCode,
         user: UserEntityForCreation,
     ) -> Result<(RefreshToken, AccessToken), SignUpError> {
         // TODO
         Ok((
-            RefreshToken::new(sign_up_token.raw(), Utc.ymd(2021, 1, 1).and_hms(0, 1, 1)),
+            RefreshToken::new(code.raw(), Utc.ymd(2021, 1, 1).and_hms(0, 1, 1)),
             AccessToken(user.username),
         ))
     }
