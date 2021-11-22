@@ -6,8 +6,7 @@ use axum::{
 };
 use serde_json::{json, Value};
 
-use super::models::BookExtract;
-use crate::domain::entity::book::BookEntity;
+use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
 use crate::domain::service::book::BookService;
 
 pub fn book_app() -> Router {
@@ -42,9 +41,9 @@ async fn get_book(
 
 async fn create_book(
     book_service: BookService,
-    Json(payload): Json<BookExtract>,
+    Json(payload): Json<BookEntityForCreation>,
 ) -> Result<Json<Value>, StatusCode> {
-    let book_id = book_service.create_book(payload.into()).await;
+    let book_id = book_service.create_book(payload).await;
     book_id
         .map(|book_id| {
             Json(json!({
@@ -57,7 +56,7 @@ async fn create_book(
 async fn update_book(
     book_service: BookService,
     Path(book_id): Path<u32>,
-    Json(payload): Json<BookExtract>,
+    Json(payload): Json<BookEntityForCreation>,
 ) -> StatusCode {
     let result = book_service.update_book((book_id, payload).into()).await;
     if result {
