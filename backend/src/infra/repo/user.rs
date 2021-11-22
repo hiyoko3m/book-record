@@ -9,7 +9,7 @@ use crate::domain::entity::{
     user::{AccessToken, RefreshToken, UserEntity, UserEntityForCreation},
     PID as EPID,
 };
-use crate::domain::repository_interface::user::UserRepository;
+use crate::domain::repo_if::user::UserRepository;
 use crate::utils::error;
 
 pub struct UserRepositoryImpl {

@@ -6,16 +6,16 @@ use axum::{
 use sqlx::{postgres::PgPool, Row};
 
 use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
-use crate::domain::repository_interface::book::BookRepositoryInterface;
-use crate::infrastructure::repository::schema::BookRow;
+use crate::domain::repo_if::book::BookRepository;
+use crate::infra::repo::schema::BookRow;
 use crate::utils::error;
 
-pub struct BookRepository {
+pub struct BookRepositoryImpl {
     pool: PgPool,
 }
 
 #[async_trait]
-impl<B> FromRequest<B> for BookRepository
+impl<B> FromRequest<B> for BookRepositoryImpl
 where
     B: Send,
 {
@@ -30,7 +30,7 @@ where
 }
 
 #[async_trait]
-impl BookRepositoryInterface for BookRepository {
+impl BookRepository for BookRepositoryImpl {
     async fn list_books(&self) -> Vec<BookEntity> {
         let rows = sqlx::query_as::<_, BookRow>("SELECT * FROM books ORDER BY id ASC")
             .fetch_all(&self.pool)

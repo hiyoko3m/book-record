@@ -1,6 +1,6 @@
 mod controller;
 mod domain;
-mod infrastructure;
+mod infra;
 mod utils;
 
 use std::net::SocketAddr;

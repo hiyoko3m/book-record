@@ -12,8 +12,8 @@ use crate::domain::entity::{
     },
     PID,
 };
-use crate::domain::repository_interface::user::UserRepository;
-use crate::infrastructure::repository::user::UserRepositoryImpl;
+use crate::domain::repo_if::user::UserRepository;
+use crate::infra::repo::user::UserRepositoryImpl;
 
 pub struct UserService {
     user_repository: UserRepositoryImpl,

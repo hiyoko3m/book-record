@@ -5,11 +5,11 @@ use axum::{
 };
 
 use super::super::entity::book::{BookEntity, BookEntityForCreation};
-use super::super::repository_interface::book::BookRepositoryInterface;
-use crate::infrastructure::repository::book::BookRepository;
+use super::super::repo_if::book::BookRepository;
+use crate::infra::repo::book::BookRepositoryImpl;
 
 pub struct BookService {
-    book_repository: BookRepository,
+    book_repository: BookRepositoryImpl,
 }
 
 #[async_trait]
@@ -20,7 +20,7 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let book_repository = BookRepository::from_request(req).await?;
+        let book_repository = BookRepositoryImpl::from_request(req).await?;
         Ok(Self { book_repository })
     }
 }

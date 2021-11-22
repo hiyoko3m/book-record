@@ -3,7 +3,7 @@ use axum::async_trait;
 use super::super::entity::book::{BookEntity, BookEntityForCreation};
 
 #[async_trait]
-pub trait BookRepositoryInterface {
+pub trait BookRepository {
     async fn list_books(&self) -> Vec<BookEntity>;
 
     async fn get_book(&self, book_id: u32) -> Option<BookEntity>;
