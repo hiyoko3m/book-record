@@ -8,8 +8,9 @@ use axum::{
     Json, Router,
 };
 use headers::Cookie;
+use serde_json::{json, Value};
 
-use crate::controller::models::{Settings, SignUpExtract};
+use crate::controller::models::{LoginExtract, Settings, SignUpExtract};
 use crate::domain::entity::user::{
     AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract, SignUpError,
 };
@@ -17,14 +18,19 @@ use crate::domain::service::user::UserService;
 
 pub fn user_app() -> Router {
     Router::new()
-        .route("/nonce", post(issue_nonce))
+        .route("/nonce", post(make_login_session))
         .route("/login", post(login))
         .route("/signup", post(sign_up))
         .route("/token", post(issue_access_token))
 }
 
-async fn issue_nonce(user_service: UserService) -> Json<String> {
-    Json(user_service.issue_nonce().await)
+async fn make_login_session(user_service: UserService) -> Json<Value> {
+    let session = user_service.make_login_session().await;
+    Json(json!({
+        "session_id": session.session_id,
+        "nonce": session.nonce,
+        "code_challenge": session.code_challenge,
+    }))
 }
 
 fn response_from_tokens(
@@ -43,11 +49,11 @@ fn response_from_tokens(
 
 async fn login(
     user_service: UserService,
-    code: String,
+    Json(payload): Json<LoginExtract>,
     Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     user_service
-        .login(code)
+        .login(payload.session_id, payload.code)
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {

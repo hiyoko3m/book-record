@@ -1,4 +1,5 @@
 use chrono::{DateTime, TimeZone, Utc};
+use openidconnect::PkceCodeChallenge;
 use serde::{Deserialize, Serialize};
 
 use super::PID;
@@ -15,9 +16,17 @@ pub struct UserEntityForCreation {
     pub username: String,
 }
 
+#[derive(Debug)]
+pub struct LoginSession {
+    pub session_id: String,
+    pub nonce: String,
+    pub code_challenge: PkceCodeChallenge,
+}
+
 pub enum LoginError {
     InvalidCode,
     NonexistUser(SignUpCode),
+    Other,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,9 +42,16 @@ impl SignUpCode {
     }
 }
 
+impl From<String> for SignUpCode {
+    fn from(s: String) -> Self {
+        SignUpCode(s)
+    }
+}
+
 pub enum SignUpError {
     InvalidCode,
     DuplicatedUser,
+    Other,
 }
 
 #[derive(Debug)]

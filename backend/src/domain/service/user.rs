@@ -7,8 +7,8 @@ use chrono::{TimeZone, Utc};
 
 use crate::domain::entity::{
     user::{
-        AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract,
-        SignUpCode, SignUpError, UserEntityForCreation,
+        AccessToken, IssueAccessTokenError, LoginError, LoginSession, RefreshToken,
+        RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation,
     },
     PID,
 };
@@ -33,12 +33,35 @@ where
 }
 
 impl UserService {
-    pub async fn issue_nonce(&self) -> String {
-        self.user_repository.issue_nonce().await
+    pub async fn make_login_session(&self) -> LoginSession {
+        self.user_repository.make_login_session().await
     }
 
-    pub async fn login(&self, code: String) -> Result<(RefreshToken, AccessToken), LoginError> {
-        unimplemented!();
+    async fn issue_tokens(&self, uid: PID) -> (RefreshToken, AccessToken) {
+        let refresh_token = self.user_repository.issue_refresh_token(uid).await;
+        let access_token = self.user_repository.issue_access_token(uid);
+        (refresh_token, access_token)
+    }
+
+    pub async fn login(
+        &self,
+        session_id: String,
+        code: String,
+    ) -> Result<(RefreshToken, AccessToken), LoginError> {
+        if let Some(sub) = self
+            .user_repository
+            .fetch_authed_user(session_id, code)
+            .await
+        {
+            if let Some(uid) = self.user_repository.get_user_id_from_sub(&sub).await {
+                Ok(self.issue_tokens(uid).await)
+            } else {
+                let code = self.user_repository.issue_sign_up_code(sub).await;
+                Err(LoginError::NonexistUser(code))
+            }
+        } else {
+            Err(LoginError::InvalidCode)
+        }
     }
 
     pub async fn sign_up(
@@ -46,11 +69,19 @@ impl UserService {
         code: SignUpCode,
         user: UserEntityForCreation,
     ) -> Result<(RefreshToken, AccessToken), SignUpError> {
-        // TODO
-        Ok((
-            RefreshToken::new(code.raw(), Utc.ymd(2021, 1, 1).and_hms(0, 1, 1)),
-            AccessToken(user.username),
-        ))
+        if let Some(sub) = self.user_repository.verify_sign_up_code(code).await {
+            let uid = self
+                .user_repository
+                .create_user(sub, user)
+                .await
+                .map_err(|err| {
+                    println!("Create user error");
+                    SignUpError::DuplicatedUser
+                })?;
+            Ok(self.issue_tokens(uid).await)
+        } else {
+            Err(SignUpError::InvalidCode)
+        }
     }
 
     pub async fn issue_access_token(
