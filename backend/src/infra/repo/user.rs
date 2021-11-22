@@ -6,8 +6,11 @@ use axum::{
 use sqlx::{postgres::PgPool, Row};
 
 use crate::domain::entity::{
-    user::{AccessToken, RefreshToken, UserEntity, UserEntityForCreation},
-    PID as EPID,
+    self,
+    user::{
+        LoginSession, RefreshToken, RefreshTokenExtract, SignUpCode, UserEntity,
+        UserEntityForCreation,
+    },
 };
 use crate::domain::repo_if::user::UserRepository;
 use crate::utils::error;
@@ -33,39 +36,47 @@ where
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn get_user(&self, id: EPID) -> Option<UserEntity> {
+    async fn get_user(&self, id: entity::PID) -> Option<UserEntity> {
         unimplemented!();
     }
 
-    async fn get_user_from_sub(&self, sub: String) -> Option<UserEntity> {
+    async fn get_user_from_sub(&self, sub: &str) -> Option<UserEntity> {
         unimplemented!();
     }
 
-    async fn create_user(&self, user: UserEntityForCreation) -> Result<u32, ()> {
+    async fn get_user_id_from_sub(&self, sub: &str) -> Option<entity::PID> {
         unimplemented!();
     }
 
-    async fn issue_nonce(&self) -> String {
+    async fn create_user(
+        &self,
+        sub: String,
+        user: UserEntityForCreation,
+    ) -> Result<entity::PID, ()> {
         unimplemented!();
     }
 
-    async fn verity_nonce(&self, nonce: String) -> bool {
+    async fn make_login_session(&self) -> LoginSession {
         unimplemented!();
     }
 
-    async fn issue_refresh_token(&self, userid: EPID) -> RefreshToken {
+    async fn fetch_authed_user(&self, session_id: String, code: String) -> Option<String> {
         unimplemented!();
     }
 
-    async fn verify_refresh_token(&self, token: RefreshToken) -> Option<EPID> {
+    async fn issue_sign_up_code(&self, sub: String) -> SignUpCode {
         unimplemented!();
     }
 
-    async fn issue_access_token(&self, userid: EPID) -> AccessToken {
+    async fn verify_sign_up_code(&self, code: SignUpCode) -> Option<String> {
         unimplemented!();
     }
 
-    async fn verify_access_token(&self, token: AccessToken) -> Option<EPID> {
+    async fn issue_refresh_token(&self, userid: entity::PID) -> RefreshToken {
+        unimplemented!();
+    }
+
+    async fn verify_refresh_token(&self, token: RefreshTokenExtract) -> Option<entity::PID> {
         unimplemented!();
     }
 }

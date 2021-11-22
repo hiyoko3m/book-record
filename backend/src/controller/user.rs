@@ -59,6 +59,7 @@ async fn login(
         .map_err(|err| match err {
             LoginError::NonexistUser(code) => (StatusCode::BAD_REQUEST, code.raw()),
             LoginError::InvalidCode => (StatusCode::FORBIDDEN, String::new()),
+            LoginError::Other => (StatusCode::INTERNAL_SERVER_ERROR, String::new()),
         })
 }
 
@@ -74,6 +75,7 @@ async fn sign_up(
         .map_err(|err| match err {
             SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
             SignUpError::InvalidCode => StatusCode::FORBIDDEN,
+            SignUpError::Other => StatusCode::INTERNAL_SERVER_ERROR,
         })
 }
 
