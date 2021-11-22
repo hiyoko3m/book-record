@@ -45,7 +45,7 @@ async fn login(
         .map(|ts| response_from_tokens(ts.0, ts.1))
         .map_err(|err| match err {
             LoginError::NonexistUser(token) => (StatusCode::BAD_REQUEST, token.raw()),
-            LoginError::InvalidIdToken => (StatusCode::UNAUTHORIZED, String::new()),
+            LoginError::InvalidIdToken => (StatusCode::FORBIDDEN, String::new()),
         })
 }
 
@@ -59,7 +59,7 @@ async fn sign_up(
         .map(|ts| response_from_tokens(ts.0, ts.1))
         .map_err(|err| match err {
             SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
-            SignUpError::InvalidSignUpToken => StatusCode::UNAUTHORIZED,
+            SignUpError::InvalidSignUpToken => StatusCode::FORBIDDEN,
         })
 }
 
@@ -74,6 +74,6 @@ async fn issue_access_token(
         .await
         .map(|ts| response_from_tokens(ts.0, ts.1))
         .map_err(|err| match err {
-            IssueAccessTokenError::InvalidRefreshToken => StatusCode::UNAUTHORIZED,
+            IssueAccessTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
         })
 }
