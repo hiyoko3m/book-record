@@ -9,7 +9,7 @@ use super::super::entity::{
 };
 
 #[async_trait]
-pub trait UserRepositoryInterface {
+pub trait UserRepository {
     async fn get_user(&self, id: PID) -> Option<UserEntity>;
 
     async fn get_user_from_sub(&self, sub: &str) -> Option<UserEntity>;

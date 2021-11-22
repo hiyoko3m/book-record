@@ -12,11 +12,11 @@ use crate::domain::entity::{
     },
     PID,
 };
-use crate::domain::repository_interface::user::UserRepositoryInterface;
-use crate::infrastructure::repository::user::UserRepository;
+use crate::domain::repository_interface::user::UserRepository;
+use crate::infrastructure::repository::user::UserRepositoryImpl;
 
 pub struct UserService {
-    user_repository: UserRepository,
+    user_repository: UserRepositoryImpl,
 }
 
 #[async_trait]
@@ -27,7 +27,7 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let user_repository = UserRepository::from_request(req).await?;
+        let user_repository = UserRepositoryImpl::from_request(req).await?;
         Ok(Self { user_repository })
     }
 }

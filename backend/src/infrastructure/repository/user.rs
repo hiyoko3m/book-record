@@ -9,15 +9,15 @@ use crate::domain::entity::{
     user::{AccessToken, RefreshToken, UserEntity, UserEntityForCreation},
     PID as EPID,
 };
-use crate::domain::repository_interface::user::UserRepositoryInterface;
+use crate::domain::repository_interface::user::UserRepository;
 use crate::utils::error;
 
-pub struct UserRepository {
+pub struct UserRepositoryImpl {
     pool: PgPool,
 }
 
 #[async_trait]
-impl<B> FromRequest<B> for UserRepository
+impl<B> FromRequest<B> for UserRepositoryImpl
 where
     B: Send,
 {
@@ -32,7 +32,7 @@ where
 }
 
 #[async_trait]
-impl UserRepositoryInterface for UserRepository {
+impl UserRepository for UserRepositoryImpl {
     async fn get_user(&self, id: EPID) -> Option<UserEntity> {
         unimplemented!();
     }
