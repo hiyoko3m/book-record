@@ -61,7 +61,14 @@ impl RefreshToken {
 }
 
 #[derive(Debug)]
+pub struct RefreshTokenExtract(pub String);
+
+#[derive(Debug)]
 pub struct AccessToken(pub String);
+
+pub enum IssueAccessTokenError {
+    InvalidRefreshToken,
+}
 
 #[cfg(test)]
 mod tests {

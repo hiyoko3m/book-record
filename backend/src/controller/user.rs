@@ -1,13 +1,16 @@
 use axum::{
+    extract::TypedHeader,
     http::StatusCode,
     response::{Headers, IntoResponse},
     routing::post,
     Json, Router,
 };
-use serde_json::Value;
+use headers::Cookie;
 
 use crate::controller::models::SignUpExtract;
-use crate::domain::entity::user::{AccessToken, LoginError, RefreshToken, SignUpError};
+use crate::domain::entity::user::{
+    AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract, SignUpError,
+};
 use crate::domain::service::user::UserService;
 
 pub fn user_app() -> Router {
@@ -60,6 +63,17 @@ async fn sign_up(
         })
 }
 
-async fn issue_access_token(user_service: UserService) -> Json<Value> {
-    unimplemented!();
+async fn issue_access_token(
+    user_service: UserService,
+    TypedHeader(cookie): TypedHeader<Cookie>,
+) -> Result<impl IntoResponse, StatusCode> {
+    let refresh_token_value = cookie.get("refresh_token").ok_or(StatusCode::FORBIDDEN)?;
+
+    user_service
+        .issue_access_token(RefreshTokenExtract(refresh_token_value.to_string()))
+        .await
+        .map(|ts| response_from_tokens(ts.0, ts.1))
+        .map_err(|err| match err {
+            IssueAccessTokenError::InvalidRefreshToken => StatusCode::UNAUTHORIZED,
+        })
 }
