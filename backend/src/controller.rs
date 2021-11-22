@@ -1,3 +1,3 @@
 pub mod book;
-mod models;
+pub mod models;
 pub mod user;

@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use axum::{
-    extract::TypedHeader,
+    extract::{Extension, TypedHeader},
     http::StatusCode,
     response::{Headers, IntoResponse},
     routing::post,
@@ -7,7 +9,7 @@ use axum::{
 };
 use headers::Cookie;
 
-use crate::controller::models::SignUpExtract;
+use crate::controller::models::{Settings, SignUpExtract};
 use crate::domain::entity::user::{
     AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract, SignUpError,
 };
@@ -26,11 +28,15 @@ async fn issue_nonce(user_service: UserService) -> Json<String> {
 }
 
 fn response_from_tokens(
+    cookie_name: &str,
     refresh_token: RefreshToken,
     access_token: AccessToken,
 ) -> impl IntoResponse {
     (
-        Headers(vec![("Set-Cookie", refresh_token.into_cookie_value())]),
+        Headers(vec![(
+            "Set-Cookie",
+            refresh_token.into_cookie_value(cookie_name),
+        )]),
         access_token.0,
     )
 }
@@ -38,11 +44,12 @@ fn response_from_tokens(
 async fn login(
     user_service: UserService,
     id_token: String,
+    Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     user_service
         .login(id_token)
         .await
-        .map(|ts| response_from_tokens(ts.0, ts.1))
+        .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
             LoginError::NonexistUser(token) => (StatusCode::BAD_REQUEST, token.raw()),
             LoginError::InvalidIdToken => (StatusCode::FORBIDDEN, String::new()),
@@ -52,11 +59,12 @@ async fn login(
 async fn sign_up(
     user_service: UserService,
     Json(payload): Json<SignUpExtract>,
+    Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, StatusCode> {
     user_service
         .sign_up(payload.token, payload.user)
         .await
-        .map(|ts| response_from_tokens(ts.0, ts.1))
+        .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
             SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
             SignUpError::InvalidSignUpToken => StatusCode::FORBIDDEN,
@@ -66,13 +74,16 @@ async fn sign_up(
 async fn issue_access_token(
     user_service: UserService,
     TypedHeader(cookie): TypedHeader<Cookie>,
+    Extension(settings): Extension<Arc<Settings>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let refresh_token_value = cookie.get("refresh_token").ok_or(StatusCode::FORBIDDEN)?;
+    let refresh_token_value = cookie
+        .get(&settings.refresh_token_cookie_name)
+        .ok_or(StatusCode::FORBIDDEN)?;
 
     user_service
         .issue_access_token(RefreshTokenExtract(refresh_token_value.to_string()))
         .await
-        .map(|ts| response_from_tokens(ts.0, ts.1))
+        .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
             IssueAccessTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
         })

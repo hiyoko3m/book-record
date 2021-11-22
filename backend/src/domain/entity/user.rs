@@ -51,9 +51,10 @@ impl RefreshToken {
         Self { token, expires_at }
     }
 
-    pub fn into_cookie_value(&self) -> String {
+    pub fn into_cookie_value(&self, cookie_name: &str) -> String {
         format!(
-            "refresh_token={}; Expires={}; Path=/; HttpOnly",
+            "{}={}; Expires={}; Path=/; HttpOnly",
+            cookie_name,
             self.token,
             self.expires_at.to_rfc2822()
         )
