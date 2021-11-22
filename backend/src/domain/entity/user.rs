@@ -81,7 +81,7 @@ pub struct RefreshTokenExtract(pub String);
 #[derive(Debug)]
 pub struct AccessToken(pub String);
 
-pub enum IssueAccessTokenError {
+pub enum RefreshTokenError {
     InvalidRefreshToken,
 }
 

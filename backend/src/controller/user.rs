@@ -12,7 +12,7 @@ use serde_json::{json, Value};
 
 use crate::controller::models::{LoginExtract, Settings, SignUpExtract};
 use crate::domain::entity::user::{
-    AccessToken, IssueAccessTokenError, LoginError, RefreshToken, RefreshTokenExtract, SignUpError,
+    AccessToken, LoginError, RefreshToken, RefreshTokenError, RefreshTokenExtract, SignUpError,
 };
 use crate::domain::service::user::UserService;
 
@@ -21,7 +21,7 @@ pub fn user_app() -> Router {
         .route("/nonce", post(make_login_session))
         .route("/login", post(login))
         .route("/signup", post(sign_up))
-        .route("/token", post(issue_access_token))
+        .route("/token", post(refresh_tokens))
 }
 
 async fn make_login_session(user_service: UserService) -> Json<Value> {
@@ -77,7 +77,7 @@ async fn sign_up(
         })
 }
 
-async fn issue_access_token(
+async fn refresh_tokens(
     user_service: UserService,
     TypedHeader(cookie): TypedHeader<Cookie>,
     Extension(settings): Extension<Arc<Settings>>,
@@ -87,10 +87,10 @@ async fn issue_access_token(
         .ok_or(StatusCode::FORBIDDEN)?;
 
     user_service
-        .issue_access_token(RefreshTokenExtract(refresh_token_value.to_string()))
+        .refresh_tokens(RefreshTokenExtract(refresh_token_value.to_string()))
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
-            IssueAccessTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
+            RefreshTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
         })
 }

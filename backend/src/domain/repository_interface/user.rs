@@ -1,9 +1,9 @@
 use axum::async_trait;
-use openidconnect::PkceCodeVerifier;
 
 use super::super::entity::{
     user::{
-        AccessToken, LoginSession, RefreshToken, SignUpCode, UserEntity, UserEntityForCreation,
+        LoginSession, RefreshToken, RefreshTokenExtract, SignUpCode, UserEntity,
+        UserEntityForCreation,
     },
     PID,
 };
@@ -38,11 +38,5 @@ pub trait UserRepositoryInterface {
 
     /// Refresh tokenを検証する。
     /// 紐づけられたuser idを返す。
-    async fn verify_refresh_token(&self, token: RefreshToken) -> Option<PID>;
-
-    fn issue_access_token(&self, userid: PID) -> AccessToken;
-
-    /// Access tokenを検証する。
-    /// Tokenが正しければ、token内にあるuser id情報を抽出して返す。
-    fn verify_access_token(&self, token: AccessToken) -> Option<PID>;
+    async fn verify_refresh_token(&self, token: RefreshTokenExtract) -> Option<PID>;
 }

@@ -7,7 +7,7 @@ use chrono::{TimeZone, Utc};
 
 use crate::domain::entity::{
     user::{
-        AccessToken, IssueAccessTokenError, LoginError, LoginSession, RefreshToken,
+        AccessToken, LoginError, LoginSession, RefreshToken, RefreshTokenError,
         RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation,
     },
     PID,
@@ -39,7 +39,7 @@ impl UserService {
 
     async fn issue_tokens(&self, uid: PID) -> (RefreshToken, AccessToken) {
         let refresh_token = self.user_repository.issue_refresh_token(uid).await;
-        let access_token = self.user_repository.issue_access_token(uid);
+        let access_token = Self::issue_access_token(uid);
         (refresh_token, access_token)
     }
 
@@ -84,10 +84,28 @@ impl UserService {
         }
     }
 
-    pub async fn issue_access_token(
+    pub async fn refresh_tokens(
         &self,
         refresh_token: RefreshTokenExtract,
-    ) -> Result<(RefreshToken, AccessToken), IssueAccessTokenError> {
-        unimplemented!()
+    ) -> Result<(RefreshToken, AccessToken), RefreshTokenError> {
+        if let Some(uid) = self
+            .user_repository
+            .verify_refresh_token(refresh_token)
+            .await
+        {
+            Ok(self.issue_tokens(uid).await)
+        } else {
+            Err(RefreshTokenError::InvalidRefreshToken)
+        }
+    }
+
+    fn issue_access_token(uid: PID) -> AccessToken {
+        unimplemented!();
+    }
+
+    /// Access tokenを検証する。
+    /// Tokenが正しければ、token内にあるuser id情報を抽出して返す。
+    fn verify_access_token(token: AccessToken) -> Option<PID> {
+        unimplemented!();
     }
 }
