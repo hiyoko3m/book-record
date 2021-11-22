@@ -1,5 +1,5 @@
 use chrono::{DateTime, TimeZone, Utc};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::PID;
 
@@ -10,15 +10,34 @@ pub struct UserEntity {
     pub username: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct UserEntityForCreation {
-    pub sub: String,
     pub username: String,
 }
 
-pub enum IdTokenError {
+pub enum LoginError {
     InvalidIdToken,
-    NonexistUser(String), // signup token
+    NonexistUser(SignUpToken),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SignUpToken(String);
+
+impl SignUpToken {
+    pub fn raw(self) -> String {
+        self.0
+    }
+}
+
+impl SignUpToken {
+    pub fn new() -> Self {
+        Self(String::new())
+    }
+}
+
+pub enum SignUpError {
+    InvalidSignUpToken,
+    DuplicatedUser,
 }
 
 #[derive(Debug)]

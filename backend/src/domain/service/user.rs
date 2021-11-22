@@ -3,9 +3,12 @@ use axum::{
     extract::{FromRequest, RequestParts},
     http::StatusCode,
 };
+use chrono::{TimeZone, Utc};
 
 use crate::domain::entity::{
-    user::{AccessToken, IdTokenError, RefreshToken},
+    user::{
+        AccessToken, LoginError, RefreshToken, SignUpError, SignUpToken, UserEntityForCreation,
+    },
     PID,
 };
 use crate::domain::repository_interface::user::UserRepositoryInterface;
@@ -33,10 +36,19 @@ impl UserService {
         self.user_repository.issue_nonce().await
     }
 
-    pub async fn login(
-        &self,
-        id_token: String,
-    ) -> Result<(RefreshToken, AccessToken), IdTokenError> {
+    pub async fn login(&self, id_token: String) -> Result<(RefreshToken, AccessToken), LoginError> {
         unimplemented!();
+    }
+
+    pub async fn sign_up(
+        &self,
+        sign_up_token: SignUpToken,
+        user: UserEntityForCreation,
+    ) -> Result<(RefreshToken, AccessToken), SignUpError> {
+        // TODO
+        Ok((
+            RefreshToken::new(sign_up_token.raw(), Utc.ymd(2021, 1, 1).and_hms(0, 1, 1)),
+            AccessToken(user.username),
+        ))
     }
 }

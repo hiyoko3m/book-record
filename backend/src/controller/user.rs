@@ -1,15 +1,13 @@
 use axum::{
-    extract::TypedHeader,
     http::StatusCode,
     response::{Headers, IntoResponse},
     routing::post,
     Json, Router,
 };
-use chrono::{TimeZone, Utc};
-use headers::Authorization;
 use serde_json::Value;
 
-use crate::domain::entity::user::{AccessToken, IdTokenError, RefreshToken};
+use crate::controller::models::SignUpExtract;
+use crate::domain::entity::user::{AccessToken, LoginError, RefreshToken, SignUpError};
 use crate::domain::service::user::UserService;
 
 pub fn user_app() -> Router {
@@ -43,13 +41,23 @@ async fn login(
         .await
         .map(|ts| response_from_tokens(ts.0, ts.1))
         .map_err(|err| match err {
-            IdTokenError::NonexistUser(token) => (StatusCode::BAD_REQUEST, token),
-            IdTokenError::InvalidIdToken => (StatusCode::UNAUTHORIZED, String::new()),
+            LoginError::NonexistUser(token) => (StatusCode::BAD_REQUEST, token.raw()),
+            LoginError::InvalidIdToken => (StatusCode::UNAUTHORIZED, String::new()),
         })
 }
 
-async fn sign_up(user_service: UserService) -> Json<Value> {
-    unimplemented!();
+async fn sign_up(
+    user_service: UserService,
+    Json(payload): Json<SignUpExtract>,
+) -> Result<impl IntoResponse, StatusCode> {
+    user_service
+        .sign_up(payload.token, payload.user)
+        .await
+        .map(|ts| response_from_tokens(ts.0, ts.1))
+        .map_err(|err| match err {
+            SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
+            SignUpError::InvalidSignUpToken => StatusCode::UNAUTHORIZED,
+        })
 }
 
 async fn issue_access_token(user_service: UserService) -> Json<Value> {
