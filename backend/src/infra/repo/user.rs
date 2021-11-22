@@ -3,7 +3,10 @@ use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
 };
+use openidconnect::core::{CoreAuthenticationFlow, CoreClient};
+use openidconnect::{AuthorizationCode, CsrfToken, Nonce, PkceCodeChallenge};
 use sqlx::{postgres::PgPool, Row};
+use uuid::Uuid;
 
 use crate::domain::entity::{
     self,
@@ -17,6 +20,7 @@ use crate::utils::error;
 
 pub struct UserRepositoryImpl {
     pool: PgPool,
+    client: CoreClient,
 }
 
 #[async_trait]
@@ -30,7 +34,11 @@ where
         let Extension(pool) = Extension::<PgPool>::from_request(req)
             .await
             .map_err(error::internal_error)?;
-        Ok(Self { pool })
+        let Extension(client) = Extension::<CoreClient>::from_request(req)
+            .await
+            .map_err(error::internal_error)?;
+
+        Ok(Self { pool, client })
     }
 }
 
@@ -57,7 +65,18 @@ impl UserRepository for UserRepositoryImpl {
     }
 
     async fn make_login_session(&self) -> LoginSession {
-        unimplemented!();
+        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
+        let nonce = Nonce::new_random();
+
+        let session_id = Uuid::new_v4().to_string();
+
+        // TODO
+        // session_idからnonceとpkce_verifierが引けるように関連付け
+        LoginSession {
+            session_id: session_id,
+            nonce: nonce.secret().to_owned(),
+            code_challenge: pkce_challenge,
+        }
     }
 
     async fn fetch_authed_user(&self, session_id: String, code: String) -> Option<String> {

@@ -18,7 +18,7 @@ use crate::domain::service::user::UserService;
 
 pub fn user_app() -> Router {
     Router::new()
-        .route("/nonce", post(make_login_session))
+        .route("/login-session", post(make_login_session))
         .route("/login", post(login))
         .route("/signup", post(sign_up))
         .route("/token", post(refresh_tokens))
@@ -29,7 +29,7 @@ async fn make_login_session(user_service: UserService) -> Json<Value> {
     Json(json!({
         "session_id": session.session_id,
         "nonce": session.nonce,
-        "code_challenge": session.code_challenge,
+        "code_challenge": session.code_challenge.as_str().to_string(),
     }))
 }
 
