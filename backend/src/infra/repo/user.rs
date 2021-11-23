@@ -50,11 +50,11 @@ impl UserRepository for UserRepositoryImpl {
     }
 
     async fn get_user_from_subject(&self, subject: &str) -> Result<UserEntity, UserError> {
-        unimplemented!();
+        Err(UserError::Nonxistent)
     }
 
     async fn get_user_id_from_subject(&self, subject: &str) -> Result<entity::PID, UserError> {
-        unimplemented!();
+        Err(UserError::Nonxistent)
     }
 
     async fn create_user(
@@ -134,7 +134,7 @@ impl UserRepository for UserRepositoryImpl {
     }
 
     async fn issue_sign_up_code(&self, sub: String) -> SignUpCode {
-        unimplemented!();
+        SignUpCode::from("aiueo".to_string())
     }
 
     async fn verify_sign_up_code(&self, code: SignUpCode) -> Result<String, SignUpError> {
