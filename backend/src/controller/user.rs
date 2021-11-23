@@ -24,6 +24,7 @@ pub fn user_app() -> Router {
 }
 
 async fn make_login_session(user_service: UserService) -> Json<Value> {
+    tracing::info!("POST /login-session");
     let session = user_service.make_login_session().await;
     Json(json!({
         "session_id": session.session_id,

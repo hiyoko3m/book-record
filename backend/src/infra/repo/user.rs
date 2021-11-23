@@ -6,7 +6,8 @@ use axum::{
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
-use redis::Client as RedisClient;
+use redis::{AsyncCommands, Client as RedisClient, Commands};
+use serde_json::json;
 use sqlx::{postgres::PgPool, Row};
 use uuid::Uuid;
 
@@ -81,9 +82,15 @@ impl UserRepository for UserRepositoryImpl {
     }
 
     async fn make_login_session(&self) -> LoginSession {
+        // OpenID Connectの仕様に沿ったコード生成
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-        let nonce = Nonce::new_random();
+        // openidconnect crateに沿った使い方ではないので、
+        // この時点でString自体を取り出しておく
+        let nonce = Nonce::new_random().secret().to_owned();
 
+        // アプリ独自にセッションを用意し、
+        // あとでclient sideから来るリクエストと
+        // OpenID Connectのコードを対応付ける
         let session_id = Uuid::new_v4().to_string();
 
         tracing::debug!(
@@ -92,11 +99,26 @@ impl UserRepository for UserRepositoryImpl {
             pkce_verifier.secret()
         );
 
-        // TODO
-        // session_idからnonceとpkce_verifierが引けるように関連付け
+        // Redisを使い、session_idと
+        // nonceおよびpkce_verifierを関連付ける
+        let mut con = self
+            .redis_cli
+            .get_async_connection()
+            .await
+            .expect("error in make connection to redis");
+        // 型を()に指定しないとコンパイルできない
+        let _: () = con
+            .hset(
+                self.settings.login_session_hash_name.to_owned(),
+                session_id.to_owned(),
+                json!({"nonce": nonce, "pkce_verifier": pkce_verifier.secret()}).to_string(),
+            )
+            .await
+            .unwrap();
+
         LoginSession {
             session_id: session_id,
-            nonce: nonce.secret().to_owned(),
+            nonce: nonce,
             code_challenge: pkce_challenge,
         }
     }

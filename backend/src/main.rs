@@ -5,7 +5,6 @@ mod settings;
 mod utils;
 
 use std::net::SocketAddr;
-use std::sync::Arc;
 
 use axum::{AddExtensionLayer, Router};
 use dotenv::dotenv;
@@ -63,7 +62,7 @@ async fn main() {
         Router::new()
             .merge(book_app())
             .merge(user_app())
-            .layer(AddExtensionLayer::new(Arc::new(settings)))
+            .layer(AddExtensionLayer::new(settings))
             .layer(AddExtensionLayer::new(client))
             .layer(AddExtensionLayer::new(pool))
             .layer(AddExtensionLayer::new(redis_cli)),
