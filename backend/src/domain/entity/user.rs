@@ -7,7 +7,7 @@ use super::PID;
 #[derive(Debug, Serialize)]
 pub struct UserEntity {
     pub id: PID,
-    pub sub: String,
+    pub subject: String,
     pub username: String,
 }
 

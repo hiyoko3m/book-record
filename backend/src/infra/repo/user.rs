@@ -49,17 +49,17 @@ impl UserRepository for UserRepositoryImpl {
         unimplemented!();
     }
 
-    async fn get_user_from_sub(&self, sub: &str) -> Result<UserEntity, UserError> {
+    async fn get_user_from_subject(&self, subject: &str) -> Result<UserEntity, UserError> {
         unimplemented!();
     }
 
-    async fn get_user_id_from_sub(&self, sub: &str) -> Result<entity::PID, UserError> {
+    async fn get_user_id_from_subject(&self, subject: &str) -> Result<entity::PID, UserError> {
         unimplemented!();
     }
 
     async fn create_user(
         &self,
-        sub: String,
+        subject: String,
         user: UserEntityForCreation,
     ) -> Result<entity::PID, UserError> {
         unimplemented!();
@@ -71,8 +71,8 @@ impl UserRepository for UserRepositoryImpl {
 
         let session_id = Uuid::new_v4().to_string();
 
-        tracing::info!(
-            "challenge: {}, verifier: {}",
+        tracing::debug!(
+            "in make_login_session: challenge: {}, verifier: {}",
             pkce_challenge.as_str(),
             pkce_verifier.secret()
         );
@@ -86,14 +86,14 @@ impl UserRepository for UserRepositoryImpl {
         }
     }
 
-    async fn fetch_authed_user(
+    async fn fetch_user_subject(
         &self,
         session_id: String,
         code: String,
     ) -> Result<String, LoginError> {
         // TODO
         // session_idからnonceとpkce_verifierを復元する
-
+        let nonce = Nonce::new("rand0m".to_string());
         let pkce_verifier =
             PkceCodeVerifier::new("EB7lIQSNeq4PNjXLvRwQiT9HgWjdW22tM9g3h0WL3oM".to_string());
 
@@ -104,16 +104,33 @@ impl UserRepository for UserRepositoryImpl {
             .set_pkce_verifier(pkce_verifier)
             .request_async(async_http_client)
             .await
-            .expect("Error on fetch id token");
+            .map_err(|err| {
+                tracing::info!(
+                    "in fetch_authed_user: error in exchanging ID token, {:?}",
+                    err
+                );
+                LoginError::InvalidCode
+            })?;
 
         // IDトークンだけ取り出す
-        let id_token = token_response
-            .id_token()
-            .expect("Error on convert token to id_token");
+        let id_token = token_response.id_token().ok_or_else(|| {
+            tracing::info!("in fetch_authed_user: ID token is missing");
+            LoginError::IdTokenMissing
+        })?;
 
-        tracing::info!("{:?}", id_token);
+        // IDトークンの検証とnonceの一致の確認
+        // 検証はiss, audの一致と、署名について行われる（openidconnect v2.1.1のソースコードを確認）
+        let claims = id_token
+            .claims(&self.client.id_token_verifier(), &nonce)
+            .map_err(|err| {
+                tracing::info!(
+                    "in fetch_authed_user: ID token verification failure: {:?}",
+                    err
+                );
+                LoginError::InvalidCode
+            })?;
 
-        Err(LoginError::InvalidCode)
+        Ok(claims.subject().as_str().to_string())
     }
 
     async fn issue_sign_up_code(&self, sub: String) -> SignUpCode {

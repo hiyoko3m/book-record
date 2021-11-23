@@ -22,6 +22,6 @@ impl From<BookRow> for BookEntity {
 #[derive(FromRow)]
 pub struct UserRow {
     id: PID,
-    idp_sub: String,
+    subject: String,
     username: String,
 }

@@ -48,15 +48,19 @@ impl UserService {
         session_id: String,
         code: String,
     ) -> Result<(RefreshToken, AccessToken), LoginError> {
-        let sub = self
+        let subject = self
             .user_repository
-            .fetch_authed_user(session_id, code)
+            .fetch_user_subject(session_id, code)
             .await?;
 
-        if let Ok(uid) = self.user_repository.get_user_id_from_sub(&sub).await {
+        if let Ok(uid) = self
+            .user_repository
+            .get_user_id_from_subject(&subject)
+            .await
+        {
             Ok(self.issue_tokens(uid).await)
         } else {
-            let code = self.user_repository.issue_sign_up_code(sub).await;
+            let code = self.user_repository.issue_sign_up_code(subject).await;
             Err(LoginError::Nonexistent(code))
         }
     }
@@ -66,11 +70,11 @@ impl UserService {
         code: SignUpCode,
         user: UserEntityForCreation,
     ) -> Result<(RefreshToken, AccessToken), SignUpError> {
-        let sub = self.user_repository.verify_sign_up_code(code).await?;
+        let subject = self.user_repository.verify_sign_up_code(code).await?;
 
         let uid = self
             .user_repository
-            .create_user(sub, user)
+            .create_user(subject, user)
             .await
             .map_err(|err| {
                 println!("Create user error");
