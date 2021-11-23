@@ -23,6 +23,7 @@ tracing = "^0.1.29"
 
 chrono = { version = "^0.4", features = ["serde"] }
 sqlx = { version = "^0.5", features = ["runtime-tokio-rustls", "postgres"] }
+redis = { version = "^0.21", features = ["tokio-comp"] }
 
 openidconnect = "^2.1"
 uuid = { version = "^0.8", features = ["v4"] }
