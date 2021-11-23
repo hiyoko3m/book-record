@@ -108,10 +108,10 @@ impl UserRepository for UserRepositoryImpl {
             .expect("error in make connection to redis");
         // 型を()に指定しないとコンパイルできない
         let _: () = con
-            .hset(
-                self.settings.login_session_hash_name.to_owned(),
-                session_id.to_owned(),
+            .set_ex(
+                format!("{}{}", self.settings.login_session_prefix, session_id),
                 json!({"nonce": nonce, "pkce_verifier": pkce_verifier.secret()}).to_string(),
+                self.settings.login_session_exp,
             )
             .await
             .unwrap();
