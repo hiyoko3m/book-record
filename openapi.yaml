@@ -15,56 +15,141 @@ tags:
   description: "本のCRUD系API"
 - name: "record"
   description: "読書記録のCRUD系API"
+security:
+- accessTokenBearer: []
 paths:
-  /user:
+  /login-session:
     post:
       tags:
       - "user"
-      summary: "ユーザ作成"
-      description: "サインアップ時にユーザを作成するためのエンドポイント"
-      operationId: "createUser"
+      summary: "IdPに送信するnonceやcode_challengeの発行"
+      operationId: "issueNonce"
+      responses:
+        "200":
+          description: "ログインセッション開始"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  session_id:
+                    type: "string"
+                  nonce:
+                    type: "string"
+                    example: "abcde1234"
+                  code_challenge:
+                    type: "string"
+                    example: "XYZ789"
+      security: []
+  /login:
+    post:
+      tags:
+      - "user"
+      summary: "ログイン"
+      description: "IdPの発行したone-time codeを使ってシステムにログインする。内部でIdPにアクセスしてIDトークンを発行してもらうことでユーザ認証を行う"
+      operationId: "login"
+      requestBody:
+        description: "One-time authorization code for IdP"
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                session_id:
+                  type: "string"
+                code:
+                  type: "string"
+      responses:
+        "200":
+          description: "ログイン成功。Access tokenを返す"
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=abcde12345; Path=/; HttpOnly; Secure
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: "ユーザが存在しない。ユーザ作成のためのone-time codeを返す"
+          content:
+            application/json:
+              schema:
+                type: string
+        "403":
+          description:
+            "IDトークンが不正"
+      security: []
+  /signup:
+    post:
+      tags:
+      - "user"
+      summary: "サインアップ"
+      description: "/loginから発行されたサインアップ用codeを使い、サインアップを行う"
+      operationId: "signUp"
       requestBody:
         description: "ユーザ情報"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              type: "object"
+              properties:
+                code:
+                  type: "string"
+                user:
+                  $ref: "#/components/schemas/User"
       responses:
         200:
-          description: "成功時"
-      security:
-      - openId: []
-  /user/login:
-    get:
+          description: "ユーザ作成に成功。Access tokenを返す"
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=abcde12345; Path=/; HttpOnly; Secure
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description:
+            "ユーザ作成に失敗"
+        403:
+          description:
+            "サインアップ用codeが不正"
+      security: []
+  /token:
+    post:
       tags:
       - "user"
-      summary: "ログイン"
-      description: "システムへのユーザログイン"
-      operationId: "login"
-      parameters:
-      - name: "username"
-        in: "query"
-        description: "ユーザ名"
-        required: true
-        schema:
-          type: "string"
-      - name: "password"
-        in: "query"
-        description: "パスワード"
-        required: true
-        schema:
-          type: "string"
+      summary: "Refresh tokenを元にaccess tokenを発行する。Refresh tokenも新しくする"
+      operationId: "refreshToken"
       responses:
         "200":
-          description: "成功時"
-        "400":
-          description: "無効なユーザ名/パスワード"
+          description: "Access tokenを発行"
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refresh_token=abcde12345; Path=/; HttpOnly; Secure
+          content:
+            application/json:
+              schema:
+                type: string
+        403:
+          description:
+            "Refresh tokenが不正、あるいは期限切れ"
+
+      security:
+        - refreshTokenCookie: []
   /books:
     get:
       tags:
       - "book"
       summary: "登録された本の一覧取得"
+      description:
+        "idの昇順に本の一覧を返す"
       operationId: "listBooks"
       responses:
         "200":
@@ -78,8 +163,6 @@ paths:
                     type: "array"
                     items:
                       $ref: "#/components/schemas/Book"
-      security:
-      - openId: []
   /book:
     post:
       tags:
@@ -92,14 +175,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Book"
+              $ref: "#/components/schemas/BookSent"
       responses:
         "200":
           description: "成功時"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  book_id:
+                    type: "integer"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
   /book/{bookId}:
     get:
       tags:
@@ -120,18 +208,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Book"
+                type: "object"
+                properties:
+                  book:
+                    $ref: "#/components/schemas/Book"
         "404":
           description: "存在しない本のID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
     post:
       tags:
       - "book"
-      summary: "本の情報のフォームからの更新"
-      operationId: "updateBookWithForm"
+      summary: "本の情報の更新"
+      operationId: "updateBook"
       parameters:
       - name: "bookId"
         in: "path"
@@ -141,12 +230,12 @@ paths:
           type: "integer"
           format: "int32"
       requestBody:
-        description: "本の書名"
-        required: false
+        description: "登録する本のオブジェクト"
+        required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
-              type: "string"
+              $ref: "#/components/schemas/BookSent"
       responses:
         "200":
           description: "成功時"
@@ -154,8 +243,6 @@ paths:
           description: "存在しない本のID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
     delete:
       tags:
       - "book"
@@ -176,8 +263,6 @@ paths:
           description: "存在しない本のID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
   /records:
     get:
       tags:
@@ -226,8 +311,6 @@ paths:
                     type: "array"
                     items:
                       $ref: "#/components/schemas/Record"
-      security:
-      - openId: []
   /record:
     post:
       tags:
@@ -246,8 +329,6 @@ paths:
           description: "成功時"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
   /record/{recordId}:
     get:
       tags:
@@ -273,8 +354,6 @@ paths:
           description: "存在しない読書記録ID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
     post:
       tags:
       - "record"
@@ -302,8 +381,6 @@ paths:
           description: "存在しない読書記録ID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
     delete:
       tags:
       - "record"
@@ -324,22 +401,22 @@ paths:
           description: "存在しない本のID"
         "422":
           description: "無効な入力"
-      security:
-      - openId: []
 components:
   securitySchemes:
-    openId:
-      type: "openIdConnect"
-      openIdConnectUrl: "https://accounts.google.com/.well-known/openid-configuration"
+    refreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+    accessTokenBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     User:
       type: "object"
       required:
       - "username"
       properties:
-        id:
-          type: "integer"
-          format: "int32"
         username:
           type: "string"
     Book:
@@ -350,6 +427,13 @@ components:
         id:
           type: "integer"
           format: "int32"
+        title:
+          type: "string"
+    BookSent:
+      type: "object"
+      required:
+      - "title"
+      properties:
         title:
           type: "string"
     RecordForm:
