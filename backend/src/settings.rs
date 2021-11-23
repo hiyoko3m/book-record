@@ -31,7 +31,7 @@ fn default_login_session_prefix() -> String {
 }
 
 fn default_login_session_exp() -> usize {
-    15
+    900
 }
 
 fn default_sign_up_session_prefix() -> String {

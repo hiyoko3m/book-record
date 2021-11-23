@@ -6,11 +6,11 @@ use axum::{
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
-use redis::{AsyncCommands, Client as RedisClient, Commands};
-use serde_json::json;
+use redis::{AsyncCommands, Client as RedisClient};
 use sqlx::{postgres::PgPool, Row};
 use uuid::Uuid;
 
+use super::session::LoginSessionStorage;
 use crate::domain::entity::{
     self,
     user::{
@@ -92,6 +92,7 @@ impl UserRepository for UserRepositoryImpl {
         // あとでclient sideから来るリクエストと
         // OpenID Connectのコードを対応付ける
         let session_id = Uuid::new_v4().to_string();
+        let session_info = LoginSessionStorage::new(&nonce, pkce_verifier.secret());
 
         tracing::debug!(
             "in make_login_session: challenge: {}, verifier: {}",
@@ -101,6 +102,8 @@ impl UserRepository for UserRepositoryImpl {
 
         // Redisを使い、session_idと
         // nonceおよびpkce_verifierを関連付ける
+        // TODO
+        // エラー処理
         let mut con = self
             .redis_cli
             .get_async_connection()
@@ -110,7 +113,7 @@ impl UserRepository for UserRepositoryImpl {
         let _: () = con
             .set_ex(
                 format!("{}{}", self.settings.login_session_prefix, session_id),
-                json!({"nonce": nonce, "pkce_verifier": pkce_verifier.secret()}).to_string(),
+                serde_json::to_string(&session_info).unwrap(),
                 self.settings.login_session_exp,
             )
             .await
@@ -129,10 +132,23 @@ impl UserRepository for UserRepositoryImpl {
         code: String,
     ) -> Result<String, LoginError> {
         // TODO
-        // session_idからnonceとpkce_verifierを復元する
-        let nonce = Nonce::new("rand0m".to_string());
-        let pkce_verifier =
-            PkceCodeVerifier::new("EB7lIQSNeq4PNjXLvRwQiT9HgWjdW22tM9g3h0WL3oM".to_string());
+        // エラー処理
+        let mut con = self
+            .redis_cli
+            .get_async_connection()
+            .await
+            .expect("error in make connection to redis");
+        let info: String = con
+            .get(format!(
+                "{}{}",
+                self.settings.login_session_prefix, session_id
+            ))
+            .await
+            .unwrap();
+        let info: LoginSessionStorage = serde_json::from_str(&info).unwrap();
+
+        let nonce = Nonce::new(info.nonce);
+        let pkce_verifier = PkceCodeVerifier::new(info.pkce_verifier);
 
         // IdPでauthorization codeと引き換えてトークンをもらう
         let token_response = self

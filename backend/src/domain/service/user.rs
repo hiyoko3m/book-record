@@ -51,13 +51,12 @@ impl UserService {
         // TODO
         // あとでモック化
         // それまではダミーのsubjectを使う
-        /*
         let subject = self
             .user_repository
             .fetch_user_subject(session_id, code)
             .await?;
-        */
-        let subject = "dummy".to_string();
+        //let subject = "dummy".to_string();
+        tracing::info!("sub: {}", subject);
 
         if let Ok(uid) = self
             .user_repository
