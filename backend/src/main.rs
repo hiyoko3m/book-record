@@ -65,8 +65,8 @@ async fn main() {
             .merge(user_app())
             .layer(AddExtensionLayer::new(Arc::new(settings)))
             .layer(AddExtensionLayer::new(client))
-            .layer(AddExtensionLayer::new(pool)),
-        //.layer(AddExtensionLayer::new(redis_cli)),
+            .layer(AddExtensionLayer::new(pool))
+            .layer(AddExtensionLayer::new(redis_cli)),
     );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));

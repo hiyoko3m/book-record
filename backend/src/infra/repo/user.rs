@@ -24,6 +24,7 @@ use crate::utils::error;
 pub struct UserRepositoryImpl {
     settings: Settings,
     pool: PgPool,
+    redis_cli: RedisClient,
     client: CoreClient,
 }
 
@@ -41,6 +42,9 @@ where
         let Extension(pool) = Extension::<PgPool>::from_request(req)
             .await
             .map_err(error::internal_error)?;
+        let Extension(redis_cli) = Extension::<RedisClient>::from_request(req)
+            .await
+            .map_err(error::internal_error)?;
         let Extension(client) = Extension::<CoreClient>::from_request(req)
             .await
             .map_err(error::internal_error)?;
@@ -48,6 +52,7 @@ where
         Ok(Self {
             settings,
             pool,
+            redis_cli,
             client,
         })
     }
