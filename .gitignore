@@ -13,4 +13,4 @@ Cargo.lock
 .env
 
 # PostgreSQL's data (for development)
-**/pgmount/
+**/.pgmount/
