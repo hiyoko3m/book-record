@@ -17,6 +17,12 @@ pub struct UserEntityForCreation {
 }
 
 #[derive(Debug)]
+pub enum UserError {
+    Nonxistent,
+    Duplicated,
+}
+
+#[derive(Debug)]
 pub struct LoginSession {
     pub session_id: String,
     pub nonce: String,
@@ -25,7 +31,8 @@ pub struct LoginSession {
 
 pub enum LoginError {
     InvalidCode,
-    NonexistUser(SignUpCode),
+    Nonexistent(SignUpCode),
+    IdTokenMissing,
     Other,
 }
 

@@ -48,19 +48,16 @@ impl UserService {
         session_id: String,
         code: String,
     ) -> Result<(RefreshToken, AccessToken), LoginError> {
-        if let Some(sub) = self
+        let sub = self
             .user_repository
             .fetch_authed_user(session_id, code)
-            .await
-        {
-            if let Some(uid) = self.user_repository.get_user_id_from_sub(&sub).await {
-                Ok(self.issue_tokens(uid).await)
-            } else {
-                let code = self.user_repository.issue_sign_up_code(sub).await;
-                Err(LoginError::NonexistUser(code))
-            }
+            .await?;
+
+        if let Ok(uid) = self.user_repository.get_user_id_from_sub(&sub).await {
+            Ok(self.issue_tokens(uid).await)
         } else {
-            Err(LoginError::InvalidCode)
+            let code = self.user_repository.issue_sign_up_code(sub).await;
+            Err(LoginError::Nonexistent(code))
         }
     }
 
@@ -69,34 +66,29 @@ impl UserService {
         code: SignUpCode,
         user: UserEntityForCreation,
     ) -> Result<(RefreshToken, AccessToken), SignUpError> {
-        if let Some(sub) = self.user_repository.verify_sign_up_code(code).await {
-            let uid = self
-                .user_repository
-                .create_user(sub, user)
-                .await
-                .map_err(|err| {
-                    println!("Create user error");
-                    SignUpError::DuplicatedUser
-                })?;
-            Ok(self.issue_tokens(uid).await)
-        } else {
-            Err(SignUpError::InvalidCode)
-        }
+        let sub = self.user_repository.verify_sign_up_code(code).await?;
+
+        let uid = self
+            .user_repository
+            .create_user(sub, user)
+            .await
+            .map_err(|err| {
+                println!("Create user error");
+                SignUpError::DuplicatedUser
+            })?;
+        Ok(self.issue_tokens(uid).await)
     }
 
     pub async fn refresh_tokens(
         &self,
         refresh_token: RefreshTokenExtract,
     ) -> Result<(RefreshToken, AccessToken), RefreshTokenError> {
-        if let Some(uid) = self
+        let uid = self
             .user_repository
             .verify_refresh_token(refresh_token)
-            .await
-        {
-            Ok(self.issue_tokens(uid).await)
-        } else {
-            Err(RefreshTokenError::InvalidRefreshToken)
-        }
+            .await?;
+
+        Ok(self.issue_tokens(uid).await)
     }
 
     fn issue_access_token(uid: PID) -> AccessToken {

@@ -57,8 +57,10 @@ async fn login(
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
-            LoginError::NonexistUser(code) => (StatusCode::BAD_REQUEST, code.raw()),
-            LoginError::InvalidCode => (StatusCode::FORBIDDEN, String::new()),
+            LoginError::Nonexistent(code) => (StatusCode::BAD_REQUEST, code.raw()),
+            LoginError::InvalidCode | LoginError::IdTokenMissing => {
+                (StatusCode::FORBIDDEN, String::new())
+            }
             LoginError::Other => (StatusCode::INTERNAL_SERVER_ERROR, String::new()),
         })
 }

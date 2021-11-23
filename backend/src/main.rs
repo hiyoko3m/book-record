@@ -9,7 +9,7 @@ use std::sync::Arc;
 use axum::{AddExtensionLayer, Router};
 use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::reqwest::async_http_client;
-use openidconnect::{ClientId, ClientSecret, IssuerUrl, RedirectUrl};
+use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl, RedirectUrl};
 use sqlx::postgres::PgPool;
 
 use self::controller::models::Settings;
@@ -40,7 +40,7 @@ async fn main() {
         ),
         Some(ClientSecret::new("CLIENT_SECRET".to_string())),
     )
-    .set_redirect_uri(RedirectUrl::new("http://redirect".to_string()).expect("a"));
+    .set_redirect_uri(RedirectUrl::new("http://localhost:8000".to_string()).expect("a"));
 
     let app = Router::new().nest(
         "/v1",
