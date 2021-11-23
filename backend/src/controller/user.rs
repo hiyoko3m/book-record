@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     extract::{Extension, TypedHeader},
     http::StatusCode,
@@ -10,11 +8,12 @@ use axum::{
 use headers::Cookie;
 use serde_json::{json, Value};
 
-use crate::controller::models::{LoginExtract, Settings, SignUpExtract};
+use crate::controller::models::{LoginExtract, SignUpExtract};
 use crate::domain::entity::user::{
     AccessToken, LoginError, RefreshToken, RefreshTokenError, RefreshTokenExtract, SignUpError,
 };
 use crate::domain::service::user::UserService;
+use crate::settings::Settings;
 
 pub fn user_app() -> Router {
     Router::new()
@@ -50,7 +49,7 @@ fn response_from_tokens(
 async fn login(
     user_service: UserService,
     Json(payload): Json<LoginExtract>,
-    Extension(settings): Extension<Arc<Settings>>,
+    Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     user_service
         .login(payload.session_id, payload.code)
@@ -68,7 +67,7 @@ async fn login(
 async fn sign_up(
     user_service: UserService,
     Json(payload): Json<SignUpExtract>,
-    Extension(settings): Extension<Arc<Settings>>,
+    Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, StatusCode> {
     user_service
         .sign_up(payload.code, payload.user)
@@ -84,7 +83,7 @@ async fn sign_up(
 async fn refresh_tokens(
     user_service: UserService,
     TypedHeader(cookie): TypedHeader<Cookie>,
-    Extension(settings): Extension<Arc<Settings>>,
+    Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let refresh_token_value = cookie
         .get(&settings.refresh_token_cookie_name)

@@ -6,6 +6,7 @@ use axum::{
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
+use redis::Client as RedisClient;
 use sqlx::{postgres::PgPool, Row};
 use uuid::Uuid;
 
@@ -17,9 +18,11 @@ use crate::domain::entity::{
     },
 };
 use crate::domain::repo_if::user::UserRepository;
+use crate::settings::Settings;
 use crate::utils::error;
 
 pub struct UserRepositoryImpl {
+    settings: Settings,
     pool: PgPool,
     client: CoreClient,
 }
@@ -32,6 +35,9 @@ where
     type Rejection = (StatusCode, String);
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let Extension(settings) = Extension::<Settings>::from_request(req)
+            .await
+            .map_err(error::internal_error)?;
         let Extension(pool) = Extension::<PgPool>::from_request(req)
             .await
             .map_err(error::internal_error)?;
@@ -39,7 +45,11 @@ where
             .await
             .map_err(error::internal_error)?;
 
-        Ok(Self { pool, client })
+        Ok(Self {
+            settings,
+            pool,
+            client,
+        })
     }
 }
 

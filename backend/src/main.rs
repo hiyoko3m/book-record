@@ -1,6 +1,7 @@
 mod controller;
 mod domain;
 mod infra;
+mod settings;
 mod utils;
 
 use std::net::SocketAddr;
@@ -10,11 +11,11 @@ use axum::{AddExtensionLayer, Router};
 use dotenv::dotenv;
 use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::reqwest::async_http_client;
-use openidconnect::{AuthType, ClientId, ClientSecret, IssuerUrl, RedirectUrl};
+use openidconnect::{ClientId, ClientSecret, IssuerUrl, RedirectUrl};
 use sqlx::postgres::PgPool;
 
-use self::controller::models::Settings;
 use self::controller::{book::book_app, user::user_app};
+use self::settings::Settings;
 
 #[tokio::main]
 async fn main() {
@@ -31,6 +32,8 @@ async fn main() {
 
     // repository層の外部アクセス先の初期化
     let pool = PgPool::connect(&settings.database_url).await.unwrap();
+    let redis_cli = redis::Client::open(settings.redis_url.to_owned())
+        .expect("initialization error: connecting Redis server failed");
 
     // IdPの設定初期化
     let provider_metadata = CoreProviderMetadata::discover_async(
@@ -63,6 +66,7 @@ async fn main() {
             .layer(AddExtensionLayer::new(Arc::new(settings)))
             .layer(AddExtensionLayer::new(client))
             .layer(AddExtensionLayer::new(pool)),
+        //.layer(AddExtensionLayer::new(redis_cli)),
     );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
