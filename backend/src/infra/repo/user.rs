@@ -100,15 +100,17 @@ impl UserRepository for UserRepositoryImpl {
             pkce_verifier.secret()
         );
 
+        tracing::info!("Login session start: {}", session_id);
+
         // Redisを使い、session_idと
         // nonceおよびpkce_verifierを関連付ける
-        // TODO
-        // エラー処理
-        let mut con = self
-            .redis_cli
-            .get_async_connection()
-            .await
-            .expect("error in make connection to redis");
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in make_login_session: error in making connection to Redis: {}",
+                err
+            );
+            LoginError::Other
+        })?;
         // 型を()に指定しないとコンパイルできない
         let _: () = con
             .set_ex(
@@ -117,7 +119,14 @@ impl UserRepository for UserRepositoryImpl {
                 self.settings.login_session_exp,
             )
             .await
-            .unwrap();
+            .map_err(|err| {
+                tracing::error!(
+                    "in make_login_session: error in storing session info ({}) to Redis: {}",
+                    session_id,
+                    err
+                );
+                LoginError::Other
+            })?;
 
         Ok(LoginSession {
             session_id: session_id,
@@ -131,21 +140,34 @@ impl UserRepository for UserRepositoryImpl {
         session_id: String,
         code: String,
     ) -> Result<String, LoginError> {
-        // TODO
-        // エラー処理
-        let mut con = self
-            .redis_cli
-            .get_async_connection()
-            .await
-            .expect("error in make connection to redis");
+        // Redisからlogin session情報の取得
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in fetch_user_subject: error in making connection to Redis: {}",
+                err
+            );
+            LoginError::Other
+        })?;
+
         let info: String = con
             .get(format!(
                 "{}{}",
                 self.settings.login_session_prefix, session_id
             ))
             .await
-            .unwrap();
-        let info: LoginSessionStorage = serde_json::from_str(&info).unwrap();
+            .map_err(|err| {
+                tracing::info!(
+                    "in fetch_user_subject: the login session with {} does not exist: {}",
+                    session_id,
+                    err
+                );
+                LoginError::InvalidCode
+            })?;
+
+        let info: LoginSessionStorage = serde_json::from_str(&info).map_err(|err| {
+            tracing::error!("in fetch_user_subject: broken session info: {}", err);
+            LoginError::Other
+        })?;
 
         let nonce = Nonce::new(info.nonce);
         let pkce_verifier = PkceCodeVerifier::new(info.pkce_verifier);
