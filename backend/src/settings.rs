@@ -21,6 +21,10 @@ pub struct Settings {
     pub sign_up_session_prefix: String,
     #[serde(default = "default_sign_up_session_exp")]
     pub sign_up_session_exp: usize, // secs
+    #[serde(default = "default_refresh_prefix")]
+    pub refresh_prefix: String,
+    #[serde(default = "default_refresh_exp")]
+    pub refresh_exp: usize, // secs
 
     #[serde(default = "default_refresh_key")]
     pub refresh_token_cookie_name: String,
@@ -39,7 +43,15 @@ fn default_sign_up_session_prefix() -> String {
 }
 
 fn default_sign_up_session_exp() -> usize {
-    15
+    900
+}
+
+fn default_refresh_prefix() -> String {
+    "REF-".to_string()
+}
+
+fn default_refresh_exp() -> usize {
+    60 * 60 * 24 * 7
 }
 
 fn default_refresh_key() -> String {

@@ -108,5 +108,6 @@ async fn refresh_tokens(
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
         .map_err(|err| match err {
             RefreshTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
+            RefreshTokenError::Other => StatusCode::INTERNAL_SERVER_ERROR,
         })
 }

@@ -90,6 +90,7 @@ pub struct AccessToken(pub String);
 
 pub enum RefreshTokenError {
     InvalidRefreshToken,
+    Other,
 }
 
 #[cfg(test)]

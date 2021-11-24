@@ -3,6 +3,7 @@ use axum::{
     extract::{Extension, FromRequest, RequestParts},
     http::StatusCode,
 };
+use chrono::{Duration, Utc};
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
@@ -266,7 +267,36 @@ impl UserRepository for UserRepositoryImpl {
         &self,
         userid: entity::PID,
     ) -> Result<RefreshToken, RefreshTokenError> {
-        unimplemented!();
+        let token = Uuid::new_v4().to_string();
+
+        // Redisにrefresh tokenを保存
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in issue_refresh_token: error in making connection to Redis: {}",
+                err
+            );
+            RefreshTokenError::Other
+        })?;
+
+        let _: () = con
+            .set_ex(
+                format!("{}{}", self.settings.refresh_prefix, token),
+                userid,
+                self.settings.refresh_exp,
+            )
+            .await
+            .map_err(|err| {
+                tracing::error!(
+                    "in issue_refresh_token: error in making a refresh token: {}",
+                    err
+                );
+                RefreshTokenError::Other
+            })?;
+
+        // 定数なのでエラーは出ない前提でasを使う
+        let expires_at = Utc::now() + Duration::seconds(self.settings.refresh_exp as i64);
+
+        Ok(RefreshToken::new(token, expires_at))
     }
 
     async fn verify_refresh_token(
