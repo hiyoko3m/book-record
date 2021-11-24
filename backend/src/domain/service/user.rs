@@ -3,7 +3,6 @@ use axum::{
     extract::{FromRequest, RequestParts},
     http::StatusCode,
 };
-use chrono::{TimeZone, Utc};
 
 use crate::domain::entity::{
     user::{
@@ -88,10 +87,7 @@ impl UserService {
             .user_repository
             .create_user(subject, user)
             .await
-            .map_err(|err| {
-                println!("Create user error");
-                SignUpError::DuplicatedUser
-            })?;
+            .map_err(|_| SignUpError::DuplicatedUser)?;
         self.issue_tokens(uid).await.map_err(|_| SignUpError::Other)
     }
 

@@ -1,4 +1,4 @@
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, Utc};
 use openidconnect::PkceCodeChallenge;
 use serde::{Deserialize, Serialize};
 
@@ -40,10 +40,6 @@ pub enum LoginError {
 pub struct SignUpCode(String);
 
 impl SignUpCode {
-    pub fn new() -> Self {
-        Self(String::new())
-    }
-
     pub fn raw(self) -> String {
         self.0
     }
@@ -96,6 +92,7 @@ pub enum RefreshTokenError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::TimeZone;
 
     #[test]
     fn test_refresh_token() {

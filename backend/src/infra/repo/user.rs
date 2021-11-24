@@ -256,7 +256,7 @@ impl UserRepository for UserRepositoryImpl {
         .await
         .map_err(|err| {
             tracing::info!(
-                "in verify_sign_up_code: invalid or expired sign up: {}",
+                "in verify_sign_up_code: invalid or expired sign up code: {}",
                 err
             );
             SignUpError::InvalidCode
@@ -303,6 +303,23 @@ impl UserRepository for UserRepositoryImpl {
         &self,
         token: RefreshTokenExtract,
     ) -> Result<entity::PID, RefreshTokenError> {
-        unimplemented!();
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in verify_refresh_token: error in making connection to Redis: {}",
+                err
+            );
+            RefreshTokenError::Other
+        })?;
+
+        // 型が一致しているので、型変換のコードは書かずにおく
+        con.get(format!("{}{}", self.settings.refresh_prefix, token.0))
+            .await
+            .map_err(|err| {
+                tracing::info!(
+                    "in verify_refresh_token: invalid or expired refresh token: {}",
+                    err
+                );
+                RefreshTokenError::InvalidRefreshToken
+            })
     }
 }
