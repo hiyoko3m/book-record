@@ -25,6 +25,7 @@ pub fn user_app() -> Router {
 
 async fn make_login_session(user_service: UserService) -> Result<Json<Value>, StatusCode> {
     tracing::info!("POST /login-session");
+
     user_service
         .make_login_session()
         .await
@@ -57,6 +58,8 @@ async fn login(
     Json(payload): Json<LoginExtract>,
     Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    tracing::info!("POST /login");
+
     user_service
         .login(payload.session_id, payload.code)
         .await
@@ -75,6 +78,8 @@ async fn sign_up(
     Json(payload): Json<SignUpExtract>,
     Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    tracing::info!("POST /signup");
+
     user_service
         .sign_up(payload.code, payload.user)
         .await
@@ -91,6 +96,8 @@ async fn refresh_tokens(
     TypedHeader(cookie): TypedHeader<Cookie>,
     Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    tracing::info!("POST /token");
+
     let refresh_token_value = cookie
         .get(&settings.refresh_token_cookie_name)
         .ok_or(StatusCode::FORBIDDEN)?;
