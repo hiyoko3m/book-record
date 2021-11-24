@@ -33,14 +33,17 @@ where
 }
 
 impl UserService {
-    pub async fn make_login_session(&self) -> LoginSession {
+    pub async fn make_login_session(&self) -> Result<LoginSession, LoginError> {
         self.user_repository.make_login_session().await
     }
 
-    async fn issue_tokens(&self, uid: PID) -> (RefreshToken, AccessToken) {
-        let refresh_token = self.user_repository.issue_refresh_token(uid).await;
+    async fn issue_tokens(
+        &self,
+        uid: PID,
+    ) -> Result<(RefreshToken, AccessToken), RefreshTokenError> {
+        let refresh_token = self.user_repository.issue_refresh_token(uid).await?;
         let access_token = Self::issue_access_token(uid);
-        (refresh_token, access_token)
+        Ok((refresh_token, access_token))
     }
 
     pub async fn login(
@@ -63,9 +66,13 @@ impl UserService {
             .get_user_id_from_subject(&subject)
             .await
         {
-            Ok(self.issue_tokens(uid).await)
+            self.issue_tokens(uid).await.map_err(|_| LoginError::Other)
         } else {
-            let code = self.user_repository.issue_sign_up_code(subject).await;
+            let code = self
+                .user_repository
+                .issue_sign_up_code(subject)
+                .await
+                .map_err(|_| LoginError::Other)?;
             Err(LoginError::Nonexistent(code))
         }
     }
@@ -85,7 +92,7 @@ impl UserService {
                 println!("Create user error");
                 SignUpError::DuplicatedUser
             })?;
-        Ok(self.issue_tokens(uid).await)
+        self.issue_tokens(uid).await.map_err(|_| SignUpError::Other)
     }
 
     pub async fn refresh_tokens(
@@ -97,7 +104,7 @@ impl UserService {
             .verify_refresh_token(refresh_token)
             .await?;
 
-        Ok(self.issue_tokens(uid).await)
+        self.issue_tokens(uid).await
     }
 
     fn issue_access_token(uid: PID) -> AccessToken {

@@ -23,14 +23,19 @@ pub fn user_app() -> Router {
         .route("/token", post(refresh_tokens))
 }
 
-async fn make_login_session(user_service: UserService) -> Json<Value> {
+async fn make_login_session(user_service: UserService) -> Result<Json<Value>, StatusCode> {
     tracing::info!("POST /login-session");
-    let session = user_service.make_login_session().await;
-    Json(json!({
-        "session_id": session.session_id,
-        "nonce": session.nonce,
-        "code_challenge": session.code_challenge.as_str().to_string(),
-    }))
+    user_service
+        .make_login_session()
+        .await
+        .map(|session| {
+            Json(json!({
+                "session_id": session.session_id,
+                "nonce": session.nonce,
+                "code_challenge": session.code_challenge.as_str().to_string(),
+            }))
+        })
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 fn response_from_tokens(

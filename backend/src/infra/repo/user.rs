@@ -81,7 +81,7 @@ impl UserRepository for UserRepositoryImpl {
         unimplemented!();
     }
 
-    async fn make_login_session(&self) -> LoginSession {
+    async fn make_login_session(&self) -> Result<LoginSession, LoginError> {
         // OpenID Connectの仕様に沿ったコード生成
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
         // openidconnect crateに沿った使い方ではないので、
@@ -119,11 +119,11 @@ impl UserRepository for UserRepositoryImpl {
             .await
             .unwrap();
 
-        LoginSession {
+        Ok(LoginSession {
             session_id: session_id,
             nonce: nonce,
             code_challenge: pkce_challenge,
-        }
+        })
     }
 
     async fn fetch_user_subject(
@@ -186,15 +186,64 @@ impl UserRepository for UserRepositoryImpl {
         Ok(claims.subject().as_str().to_string())
     }
 
-    async fn issue_sign_up_code(&self, sub: String) -> SignUpCode {
-        SignUpCode::from("aiueo".to_string())
+    async fn issue_sign_up_code(&self, subject: String) -> Result<SignUpCode, SignUpError> {
+        let code = Uuid::new_v4().to_string();
+
+        // Redisにsign up session情報を保存
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in issue_sign_up_code: error in making connection to Redis: {}",
+                err
+            );
+            SignUpError::Other
+        })?;
+
+        let _: () = con
+            .set_ex(
+                format!("{}{}", self.settings.sign_up_session_prefix, code),
+                subject,
+                self.settings.sign_up_session_exp,
+            )
+            .await
+            .map_err(|err| {
+                tracing::error!(
+                    "in issue_sign_up_code: error in making sing up session: {}",
+                    err
+                );
+                SignUpError::Other
+            })?;
+
+        Ok(SignUpCode::from(code))
     }
 
     async fn verify_sign_up_code(&self, code: SignUpCode) -> Result<String, SignUpError> {
-        unimplemented!();
+        let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
+            tracing::error!(
+                "in verify_sign_up_code: error in making connection to Redis: {}",
+                err
+            );
+            SignUpError::Other
+        })?;
+
+        con.get(format!(
+            "{}{}",
+            self.settings.sign_up_session_prefix,
+            code.raw()
+        ))
+        .await
+        .map_err(|err| {
+            tracing::info!(
+                "in verify_sign_up_code: invalid or expired sign up: {}",
+                err
+            );
+            SignUpError::InvalidCode
+        })
     }
 
-    async fn issue_refresh_token(&self, userid: entity::PID) -> RefreshToken {
+    async fn issue_refresh_token(
+        &self,
+        userid: entity::PID,
+    ) -> Result<RefreshToken, RefreshTokenError> {
         unimplemented!();
     }
 

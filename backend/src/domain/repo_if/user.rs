@@ -22,7 +22,7 @@ pub trait UserRepository {
         user: UserEntityForCreation,
     ) -> Result<PID, UserError>;
 
-    async fn make_login_session(&self) -> LoginSession;
+    async fn make_login_session(&self) -> Result<LoginSession, LoginError>;
 
     /// ログインセッションに紐づくログイン要求か検証し、
     /// その場合にIdPの提供するユーザ識別子を返す。
@@ -34,7 +34,7 @@ pub trait UserRepository {
     ) -> Result<String, LoginError>;
 
     /// ユーザ作成用のone-time codeを発行する。
-    async fn issue_sign_up_code(&self, subject: String) -> SignUpCode;
+    async fn issue_sign_up_code(&self, subject: String) -> Result<SignUpCode, SignUpError>;
 
     /// ユーザ作成用のcodeを検証する。
     /// IdP提供のsubjectを返却する。
@@ -42,7 +42,7 @@ pub trait UserRepository {
 
     /// 新しいrefresh tokenを発行する。
     /// 古いrefresh tokenがある場合は無効になる。
-    async fn issue_refresh_token(&self, userid: PID) -> RefreshToken;
+    async fn issue_refresh_token(&self, userid: PID) -> Result<RefreshToken, RefreshTokenError>;
 
     /// Refresh tokenを検証する。
     /// 紐づけられたuser idを返す。
