@@ -2,7 +2,6 @@ mod controller;
 mod domain;
 mod infra;
 mod settings;
-mod utils;
 
 use std::net::SocketAddr;
 
@@ -30,7 +29,9 @@ async fn main() {
     );
 
     // repository層の外部アクセス先の初期化
-    let pool = PgPool::connect(&settings.database_url).await.unwrap();
+    let pg_pool = PgPool::connect(&settings.database_url)
+        .await
+        .expect("initialization error: connecting Postgres server failed");
     let redis_cli = redis::Client::open(settings.redis_url.to_owned())
         .expect("initialization error: connecting Redis server failed");
 
@@ -43,7 +44,7 @@ async fn main() {
     .await
     .expect("initialization error: failed in discovering the IdP's metadata");
 
-    let client = CoreClient::from_provider_metadata(
+    let id_cli = CoreClient::from_provider_metadata(
         provider_metadata,
         ClientId::new(settings.id_provider_client_id.to_owned()),
         Some(ClientSecret::new(
@@ -63,8 +64,8 @@ async fn main() {
             .merge(book_app())
             .merge(user_app())
             .layer(AddExtensionLayer::new(settings))
-            .layer(AddExtensionLayer::new(client))
-            .layer(AddExtensionLayer::new(pool))
+            .layer(AddExtensionLayer::new(id_cli))
+            .layer(AddExtensionLayer::new(pg_pool))
             .layer(AddExtensionLayer::new(redis_cli)),
     );
 
@@ -78,5 +79,5 @@ async fn main() {
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
-        .unwrap();
+        .expect("initialization error: axum server couldn't start");
 }

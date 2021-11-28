@@ -1,6 +1,11 @@
+use axum::{
+    http::{Response, StatusCode},
+    response::{IntoResponse, Json},
+};
 use chrono::{DateTime, Utc};
 use openidconnect::PkceCodeChallenge;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
 use super::PID;
 
@@ -36,6 +41,25 @@ pub enum LoginError {
     Other,
 }
 
+impl IntoResponse for LoginError {
+    type Body = <(StatusCode, Json<Value>) as IntoResponse>::Body;
+    type BodyError = <(StatusCode, Json<Value>) as IntoResponse>::BodyError;
+
+    fn into_response(self) -> Response<Self::Body> {
+        let (status, error_message) = match self {
+            LoginError::Nonexistent(code) => (StatusCode::FORBIDDEN, code.raw()),
+            LoginError::InvalidCode | LoginError::IdTokenMissing => {
+                (StatusCode::FORBIDDEN, String::new())
+            }
+            LoginError::Other => (StatusCode::INTERNAL_SERVER_ERROR, String::new()),
+        };
+        let body = Json(json!({
+            "error": error_message,
+        }));
+        (status, body).into_response()
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct SignUpCode(String);
 
@@ -55,6 +79,20 @@ pub enum SignUpError {
     InvalidCode,
     DuplicatedUser,
     Other,
+}
+
+impl IntoResponse for SignUpError {
+    type Body = <StatusCode as IntoResponse>::Body;
+    type BodyError = <StatusCode as IntoResponse>::BodyError;
+
+    fn into_response(self) -> Response<Self::Body> {
+        match self {
+            SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
+            SignUpError::InvalidCode => StatusCode::FORBIDDEN,
+            SignUpError::Other => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+        .into_response()
+    }
 }
 
 #[derive(Debug)]
@@ -87,6 +125,19 @@ pub struct AccessToken(pub String);
 pub enum RefreshTokenError {
     InvalidRefreshToken,
     Other,
+}
+
+impl IntoResponse for RefreshTokenError {
+    type Body = <StatusCode as IntoResponse>::Body;
+    type BodyError = <StatusCode as IntoResponse>::BodyError;
+
+    fn into_response(self) -> Response<Self::Body> {
+        match self {
+            RefreshTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
+            RefreshTokenError::Other => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+        .into_response()
+    }
 }
 
 #[cfg(test)]

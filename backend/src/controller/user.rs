@@ -1,6 +1,5 @@
 use axum::{
     extract::{Extension, TypedHeader},
-    http::StatusCode,
     response::{Headers, IntoResponse},
     routing::post,
     Json, Router,
@@ -23,20 +22,16 @@ pub fn user_app() -> Router {
         .route("/token", post(refresh_tokens))
 }
 
-async fn make_login_session(user_service: UserService) -> Result<Json<Value>, StatusCode> {
+async fn make_login_session(user_service: UserService) -> Result<Json<Value>, LoginError> {
     tracing::info!("POST /login-session");
 
-    user_service
-        .make_login_session()
-        .await
-        .map(|session| {
-            Json(json!({
-                "session_id": session.session_id,
-                "nonce": session.nonce,
-                "code_challenge": session.code_challenge.as_str().to_string(),
-            }))
-        })
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+    user_service.make_login_session().await.map(|session| {
+        Json(json!({
+            "session_id": session.session_id,
+            "nonce": session.nonce,
+            "code_challenge": session.code_challenge.as_str().to_string(),
+        }))
+    })
 }
 
 fn response_from_tokens(
@@ -57,57 +52,41 @@ async fn login(
     user_service: UserService,
     Json(payload): Json<LoginExtract>,
     Extension(settings): Extension<Settings>,
-) -> Result<impl IntoResponse, (StatusCode, String)> {
+) -> Result<impl IntoResponse, LoginError> {
     tracing::info!("POST /login");
 
     user_service
         .login(payload.session_id, payload.code)
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
-        .map_err(|err| match err {
-            LoginError::Nonexistent(code) => (StatusCode::BAD_REQUEST, code.raw()),
-            LoginError::InvalidCode | LoginError::IdTokenMissing => {
-                (StatusCode::FORBIDDEN, String::new())
-            }
-            LoginError::Other => (StatusCode::INTERNAL_SERVER_ERROR, String::new()),
-        })
 }
 
 async fn sign_up(
     user_service: UserService,
     Json(payload): Json<SignUpExtract>,
     Extension(settings): Extension<Settings>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, SignUpError> {
     tracing::info!("POST /signup");
 
     user_service
         .sign_up(payload.code, payload.user)
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
-        .map_err(|err| match err {
-            SignUpError::DuplicatedUser => StatusCode::BAD_REQUEST,
-            SignUpError::InvalidCode => StatusCode::FORBIDDEN,
-            SignUpError::Other => StatusCode::INTERNAL_SERVER_ERROR,
-        })
 }
 
 async fn refresh_tokens(
     user_service: UserService,
     TypedHeader(cookie): TypedHeader<Cookie>,
     Extension(settings): Extension<Settings>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, RefreshTokenError> {
     tracing::info!("POST /token");
 
     let refresh_token_value = cookie
         .get(&settings.refresh_token_cookie_name)
-        .ok_or(StatusCode::FORBIDDEN)?;
+        .ok_or(RefreshTokenError::InvalidRefreshToken)?;
 
     user_service
         .refresh_tokens(RefreshTokenExtract(refresh_token_value.to_string()))
         .await
         .map(|ts| response_from_tokens(&settings.refresh_token_cookie_name, ts.0, ts.1))
-        .map_err(|err| match err {
-            RefreshTokenError::InvalidRefreshToken => StatusCode::FORBIDDEN,
-            RefreshTokenError::Other => StatusCode::INTERNAL_SERVER_ERROR,
-        })
 }

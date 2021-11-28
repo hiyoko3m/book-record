@@ -1,7 +1,6 @@
 use axum::{
     async_trait,
     extract::{Extension, FromRequest, RequestParts},
-    http::StatusCode,
 };
 use chrono::{Duration, Utc};
 use openidconnect::core::CoreClient;
@@ -18,10 +17,10 @@ use crate::domain::entity::{
         LoginError, LoginSession, RefreshToken, RefreshTokenError, RefreshTokenExtract, SignUpCode,
         SignUpError, UserEntity, UserEntityForCreation, UserError,
     },
+    AxumError,
 };
 use crate::domain::repo_if::user::UserRepository;
 use crate::settings::Settings;
-use crate::utils::error;
 
 pub struct UserRepositoryImpl {
     settings: Settings,
@@ -35,21 +34,21 @@ impl<B> FromRequest<B> for UserRepositoryImpl
 where
     B: Send,
 {
-    type Rejection = (StatusCode, String);
+    type Rejection = AxumError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(settings) = Extension::<Settings>::from_request(req)
             .await
-            .map_err(error::internal_error)?;
+            .map_err(|_| AxumError::OtherError("Settings extension error".to_string()))?;
         let Extension(pool) = Extension::<PgPool>::from_request(req)
             .await
-            .map_err(error::internal_error)?;
+            .map_err(|_| AxumError::PgConnectionError)?;
         let Extension(redis_cli) = Extension::<RedisClient>::from_request(req)
             .await
-            .map_err(error::internal_error)?;
+            .map_err(|_| AxumError::RedisConnectionError)?;
         let Extension(client) = Extension::<CoreClient>::from_request(req)
             .await
-            .map_err(error::internal_error)?;
+            .map_err(|_| AxumError::OtherError("OIDC extension error".to_string()))?;
 
         Ok(Self {
             settings,

@@ -1,7 +1,6 @@
 use axum::{
     async_trait,
     extract::{FromRequest, RequestParts},
-    http::StatusCode,
 };
 
 use crate::domain::entity::{
@@ -9,7 +8,7 @@ use crate::domain::entity::{
         AccessToken, LoginError, LoginSession, RefreshToken, RefreshTokenError,
         RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation,
     },
-    PID,
+    AxumError, PID,
 };
 use crate::domain::repo_if::user::UserRepository;
 use crate::infra::repo::user::UserRepositoryImpl;
@@ -23,7 +22,7 @@ impl<B> FromRequest<B> for UserService
 where
     B: Send,
 {
-    type Rejection = (StatusCode, String);
+    type Rejection = AxumError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let user_repository = UserRepositoryImpl::from_request(req).await?;

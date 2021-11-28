@@ -1,14 +1,13 @@
 use axum::{
     async_trait,
     extract::{Extension, FromRequest, RequestParts},
-    http::StatusCode,
 };
 use sqlx::{postgres::PgPool, Row};
 
 use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
+use crate::domain::entity::AxumError;
 use crate::domain::repo_if::book::BookRepository;
 use crate::infra::repo::schema::BookRow;
-use crate::utils::error;
 
 pub struct BookRepositoryImpl {
     pool: PgPool,
@@ -19,12 +18,12 @@ impl<B> FromRequest<B> for BookRepositoryImpl
 where
     B: Send,
 {
-    type Rejection = (StatusCode, String);
+    type Rejection = AxumError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let Extension(pool) = Extension::<PgPool>::from_request(req)
             .await
-            .map_err(error::internal_error)?;
+            .map_err(|_| AxumError::PgConnectionError)?;
         Ok(Self { pool })
     }
 }

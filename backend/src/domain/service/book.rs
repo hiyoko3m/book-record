@@ -1,10 +1,12 @@
 use axum::{
     async_trait,
     extract::{FromRequest, RequestParts},
-    http::StatusCode,
 };
 
-use super::super::entity::book::{BookEntity, BookEntityForCreation};
+use super::super::entity::{
+    book::{BookEntity, BookEntityForCreation},
+    AxumError,
+};
 use super::super::repo_if::book::BookRepository;
 use crate::infra::repo::book::BookRepositoryImpl;
 
@@ -17,7 +19,7 @@ impl<B> FromRequest<B> for BookService
 where
     B: Send,
 {
-    type Rejection = (StatusCode, String);
+    type Rejection = AxumError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let book_repository = BookRepositoryImpl::from_request(req).await?;
