@@ -7,9 +7,10 @@ use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
 use redis::{AsyncCommands, Client as RedisClient};
-use sqlx::{postgres::PgPool, Row};
+use sqlx::{postgres::PgPool, Error as SqlxError, Row};
 use uuid::Uuid;
 
+use super::schema::{UserIdRow, UserRow};
 use super::session::LoginSessionStorage;
 use crate::domain::entity::{
     self,
@@ -62,15 +63,39 @@ where
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
     async fn get_user(&self, id: entity::PID) -> Result<UserEntity, UserError> {
-        unimplemented!();
+        sqlx::query_as::<_, UserRow>("SELECT * FROM users WHERE id = $1")
+            .bind(id as super::PID)
+            .fetch_one(&self.pool)
+            .await
+            .map(UserEntity::from)
+            .map_err(|err| match err {
+                SqlxError::RowNotFound => UserError::Nonxistent,
+                _ => UserError::Other,
+            })
     }
 
     async fn get_user_from_subject(&self, subject: &str) -> Result<UserEntity, UserError> {
-        Err(UserError::Nonxistent)
+        sqlx::query_as::<_, UserRow>("SELECT * FROM users WHERE subject = $1")
+            .bind(subject)
+            .fetch_one(&self.pool)
+            .await
+            .map(UserEntity::from)
+            .map_err(|err| match err {
+                SqlxError::RowNotFound => UserError::Nonxistent,
+                _ => UserError::Other,
+            })
     }
 
     async fn get_user_id_from_subject(&self, subject: &str) -> Result<entity::PID, UserError> {
-        Err(UserError::Nonxistent)
+        sqlx::query_as::<_, UserIdRow>("SELECT id FROM users WHERE subject = $1")
+            .bind(subject)
+            .fetch_one(&self.pool)
+            .await
+            .map(entity::PID::from)
+            .map_err(|err| match err {
+                SqlxError::RowNotFound => UserError::Nonxistent,
+                _ => UserError::Other,
+            })
     }
 
     async fn create_user(
@@ -78,7 +103,33 @@ impl UserRepository for UserRepositoryImpl {
         subject: String,
         user: UserEntityForCreation,
     ) -> Result<entity::PID, UserError> {
-        unimplemented!();
+        let mut transaction = self.pool.begin().await.map_err(|err| {
+            tracing::info!("could not establish transaction: {}", err);
+            UserError::Other
+        })?;
+
+        let row = sqlx::query("INSERT INTO users (subject, username) VALUES ($1, $2) RETURNING id")
+            .bind(subject)
+            .bind(user.username)
+            .fetch_one(&mut transaction)
+            .await
+            .map_err(|err| {
+                tracing::info!("insert was failed: {}", err);
+                UserError::Duplicated
+            })?;
+
+        transaction.commit().await.map_err(|err| {
+            tracing::info!("commiting was failed: {}", err);
+            UserError::Other
+        })?;
+
+        row.try_get::<i32, _>("id")
+            // SQLの仕様ではsignedだが、値は0以上のものが返ってくる
+            .map(|id| id as u32)
+            .map_err(|err| {
+                tracing::info!("parsing inserted id was failed: {}", err);
+                UserError::Other
+            })
     }
 
     async fn make_login_session(&self) -> Result<LoginSession, LoginError> {
