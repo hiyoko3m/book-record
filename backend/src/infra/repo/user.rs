@@ -69,7 +69,7 @@ impl UserRepository for UserRepositoryImpl {
             .await
             .map(UserEntity::from)
             .map_err(|err| match err {
-                SqlxError::RowNotFound => UserError::Nonxistent,
+                SqlxError::RowNotFound => UserError::Nonexistent,
                 _ => UserError::Other,
             })
     }
@@ -81,7 +81,7 @@ impl UserRepository for UserRepositoryImpl {
             .await
             .map(UserEntity::from)
             .map_err(|err| match err {
-                SqlxError::RowNotFound => UserError::Nonxistent,
+                SqlxError::RowNotFound => UserError::Nonexistent,
                 _ => UserError::Other,
             })
     }
@@ -93,7 +93,7 @@ impl UserRepository for UserRepositoryImpl {
             .await
             .map(entity::PID::from)
             .map_err(|err| match err {
-                SqlxError::RowNotFound => UserError::Nonxistent,
+                SqlxError::RowNotFound => UserError::Nonexistent,
                 _ => UserError::Other,
             })
     }
@@ -113,9 +113,15 @@ impl UserRepository for UserRepositoryImpl {
             .bind(user.username)
             .fetch_one(&mut transaction)
             .await
-            .map_err(|err| {
-                tracing::info!("insert was failed: {}", err);
-                UserError::Duplicated
+            .map_err(|err| match err {
+                SqlxError::Database(_) => {
+                    tracing::warn!("tried to create a user with the same subject");
+                    UserError::Duplicated
+                }
+                _ => {
+                    tracing::info!("insert was failed: {}", err);
+                    UserError::Other
+                }
             })?;
 
         transaction.commit().await.map_err(|err| {

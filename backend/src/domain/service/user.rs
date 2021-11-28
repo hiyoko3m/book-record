@@ -6,7 +6,7 @@ use axum::{
 use crate::domain::entity::{
     user::{
         AccessToken, LoginError, LoginSession, RefreshToken, RefreshTokenError,
-        RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation,
+        RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation, UserError,
     },
     AxumError, PID,
 };
@@ -52,26 +52,28 @@ impl UserService {
         // TODO
         // あとでモック化
         // それまではダミーのsubjectを使う
-        let subject = self
-            .user_repository
-            .fetch_user_subject(session_id, code)
-            .await?;
-        //let subject = "dummy".to_string();
+        //        let subject = self
+        //            .user_repository
+        //            .fetch_user_subject(session_id, code)
+        //            .await?;
+        let subject = "dummy".to_string();
         tracing::info!("sub: {}", subject);
 
-        if let Ok(uid) = self
+        match self
             .user_repository
             .get_user_id_from_subject(&subject)
             .await
         {
-            self.issue_tokens(uid).await.map_err(|_| LoginError::Other)
-        } else {
-            let code = self
-                .user_repository
-                .issue_sign_up_code(subject)
-                .await
-                .map_err(|_| LoginError::Other)?;
-            Err(LoginError::Nonexistent(code))
+            Ok(uid) => self.issue_tokens(uid).await.map_err(|_| LoginError::Other),
+            Err(UserError::Nonexistent) => {
+                let code = self
+                    .user_repository
+                    .issue_sign_up_code(subject)
+                    .await
+                    .map_err(|_| LoginError::Other)?;
+                Err(LoginError::Nonexistent(code))
+            }
+            _ => Err(LoginError::Other),
         }
     }
 

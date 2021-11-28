@@ -23,7 +23,7 @@ pub struct UserEntityForCreation {
 
 #[derive(Debug)]
 pub enum UserError {
-    Nonxistent,
+    Nonexistent,
     Duplicated,
     Other,
 }
