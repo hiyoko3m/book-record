@@ -8,6 +8,7 @@ use serde_json::{json, Value};
 
 use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
 use crate::domain::service::book::BookService;
+use crate::domain::service::user::UserId;
 
 pub fn book_app() -> Router {
     Router::new()
@@ -17,6 +18,7 @@ pub fn book_app() -> Router {
             "/book/:id",
             get(get_book).post(update_book).delete(delete_book),
         )
+        .route("/protected", get(|UserId(id): UserId| async { "Hello" }))
 }
 
 async fn list_books(book_service: BookService) -> Json<Value> {

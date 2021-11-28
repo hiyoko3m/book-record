@@ -22,6 +22,8 @@ pub trait UserRepository {
         user: UserEntityForCreation,
     ) -> Result<PID, UserError>;
 
+    async fn does_exist_user_id(&self, user_id: PID) -> Result<bool, UserError>;
+
     async fn make_login_session(&self) -> Result<LoginSession, LoginError>;
 
     /// ログインセッションに紐づくログイン要求か検証し、

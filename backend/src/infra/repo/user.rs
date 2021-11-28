@@ -98,6 +98,18 @@ impl UserRepository for UserRepositoryImpl {
             })
     }
 
+    async fn does_exist_user_id(&self, user_id: entity::PID) -> Result<bool, UserError> {
+        match sqlx::query_as::<_, UserIdRow>("SELECT id FROM users WHERE id = $1")
+            .bind(user_id as super::PID)
+            .fetch_one(&self.pool)
+            .await
+        {
+            Ok(_) => Ok(true),
+            Err(SqlxError::RowNotFound) => Ok(false),
+            _ => Err(UserError::Other),
+        }
+    }
+
     async fn create_user(
         &self,
         subject: String,

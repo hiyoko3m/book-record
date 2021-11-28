@@ -135,6 +135,10 @@ impl AccessTokenClaims {
     pub fn new(iss: String, sub: PID, exp: usize) -> Self {
         Self { iss, sub, exp }
     }
+
+    pub fn user_id(&self) -> PID {
+        self.sub
+    }
 }
 
 pub enum RefreshTokenError {

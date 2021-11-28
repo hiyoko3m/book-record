@@ -1,9 +1,10 @@
 use axum::{
     async_trait,
-    extract::{Extension, FromRequest, RequestParts},
+    extract::{Extension, FromRequest, RequestParts, TypedHeader},
 };
 use chrono::{Duration, Utc};
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use headers::{authorization::Bearer, Authorization};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 
 use crate::domain::entity::{
     user::{
@@ -136,10 +137,54 @@ impl UserService {
                 RefreshTokenError::Other
             })
     }
+}
 
-    /// Access tokenを検証する。
-    /// Tokenが正しければ、token内にあるuser id情報を抽出して返す。
-    fn verify_access_token(token: AccessToken) -> Option<PID> {
-        unimplemented!();
+pub struct UserId(pub PID);
+
+#[async_trait]
+impl<B> FromRequest<B> for UserId
+where
+    B: Send,
+{
+    type Rejection = AxumError;
+
+    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let Extension(settings) = Extension::<Settings>::from_request(req)
+            .await
+            .map_err(|_| AxumError::OtherError("Settings extension error".to_string()))?;
+        let secret = DecodingKey::from_base64_secret(&settings.access_secret).map_err(|err| {
+            tracing::error!("in UserId: secret key decoding error: {}", err);
+            AxumError::OtherError("secret key decoding error".to_string())
+        })?;
+        let user_repository = UserRepositoryImpl::from_request(req)
+            .await
+            .map_err(|_| AxumError::OtherError(String::new()))?;
+
+        let TypedHeader(Authorization(bearer)) =
+            TypedHeader::<Authorization<Bearer>>::from_request(req)
+                .await
+                .map_err(|_| AxumError::MissingAccessToken)?;
+
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.validate_exp = false;
+        validation.iss = Some(settings.access_iss);
+
+        let id = decode::<AccessTokenClaims>(bearer.token(), &secret, &validation)
+            .map_err(|err| {
+                tracing::info!("in UserId: invalid token: {}", err);
+                AxumError::InvalidAccessToken
+            })?
+            .claims
+            .user_id();
+
+        if user_repository
+            .does_exist_user_id(id)
+            .await
+            .map_err(|_| AxumError::OtherError(String::new()))?
+        {
+            Ok(Self(id))
+        } else {
+            Err(AxumError::InvalidAccessToken)
+        }
     }
 }
