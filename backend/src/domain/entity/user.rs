@@ -98,8 +98,8 @@ impl IntoResponse for SignUpError {
 
 #[derive(Debug)]
 pub struct RefreshToken {
-    pub token: String,
-    pub expires_at: DateTime<Utc>,
+    token: String,
+    expires_at: DateTime<Utc>,
 }
 
 impl RefreshToken {
@@ -107,12 +107,13 @@ impl RefreshToken {
         Self { token, expires_at }
     }
 
-    pub fn into_cookie_value(&self, cookie_name: &str) -> String {
+    pub fn into_cookie_value(&self, cookie_name: &str, path: &str) -> String {
         format!(
-            "{}={}; Expires={}; Path=/; HttpOnly",
+            "{}={}; Expires={}; Path={}; HttpOnly",
             cookie_name,
             self.token,
-            self.expires_at.to_rfc2822()
+            self.expires_at.to_rfc2822(),
+            path,
         )
     }
 }
@@ -122,6 +123,19 @@ pub struct RefreshTokenExtract(pub String);
 
 #[derive(Debug)]
 pub struct AccessToken(pub String);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccessTokenClaims {
+    iss: String,
+    sub: PID,
+    exp: usize,
+}
+
+impl AccessTokenClaims {
+    pub fn new(iss: String, sub: PID, exp: usize) -> Self {
+        Self { iss, sub, exp }
+    }
+}
 
 pub enum RefreshTokenError {
     InvalidRefreshToken,
@@ -153,6 +167,9 @@ mod tests {
         let expected =
             "refresh_token=t0ken; Expires=Sat, 01 Jan 2000 00:01:01 +0000; Path=/; HttpOnly";
 
-        assert_eq!(refresh_token.into_cookie_value("refresh_token"), expected);
+        assert_eq!(
+            refresh_token.into_cookie_value("refresh_token", "/"),
+            expected
+        );
     }
 }

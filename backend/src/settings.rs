@@ -26,6 +26,14 @@ pub struct Settings {
     #[serde(default = "default_refresh_exp")]
     pub refresh_exp: usize, // secs
 
+    // Access token
+    #[serde(default = "default_access_exp")]
+    pub access_exp: usize, // secs
+    #[serde(default = "default_access_iss")]
+    pub access_iss: String,
+    #[serde(default = "default_access_secret")]
+    pub access_secret: String,
+
     #[serde(default = "default_refresh_key")]
     pub refresh_token_cookie_name: String,
 }
@@ -52,6 +60,18 @@ fn default_refresh_prefix() -> String {
 
 fn default_refresh_exp() -> usize {
     60 * 60 * 24 * 7
+}
+
+fn default_access_exp() -> usize {
+    60 * 15
+}
+
+fn default_access_iss() -> String {
+    "book-record".to_string()
+}
+
+fn default_access_secret() -> String {
+    "SyBNLfDIYgjs6WF7I8YKMAQdFrDBeo1v8rTnM+PEHzA=".to_string()
 }
 
 fn default_refresh_key() -> String {

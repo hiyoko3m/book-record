@@ -26,4 +26,5 @@ sqlx = { version = "^0.5", features = ["runtime-tokio-rustls", "postgres"] }
 redis = { version = "^0.21", features = ["tokio-comp"] }
 
 openidconnect = "^2.1"
+jsonwebtoken = "^7.2"
 uuid = { version = "^0.8", features = ["v4"] }

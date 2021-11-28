@@ -42,7 +42,7 @@ fn response_from_tokens(
     (
         Headers(vec![(
             "Set-Cookie",
-            refresh_token.into_cookie_value(cookie_name),
+            refresh_token.into_cookie_value(cookie_name, "/token"),
         )]),
         access_token.0,
     )

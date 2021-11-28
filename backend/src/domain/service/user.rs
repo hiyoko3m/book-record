@@ -1,19 +1,23 @@
 use axum::{
     async_trait,
-    extract::{FromRequest, RequestParts},
+    extract::{Extension, FromRequest, RequestParts},
 };
+use chrono::{Duration, Utc};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 
 use crate::domain::entity::{
     user::{
-        AccessToken, LoginError, LoginSession, RefreshToken, RefreshTokenError,
+        AccessToken, AccessTokenClaims, LoginError, LoginSession, RefreshToken, RefreshTokenError,
         RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation, UserError,
     },
     AxumError, PID,
 };
 use crate::domain::repo_if::user::UserRepository;
 use crate::infra::repo::user::UserRepositoryImpl;
+use crate::settings::Settings;
 
 pub struct UserService {
+    settings: Settings,
     user_repository: UserRepositoryImpl,
 }
 
@@ -25,8 +29,15 @@ where
     type Rejection = AxumError;
 
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+        let Extension(settings) = Extension::<Settings>::from_request(req)
+            .await
+            .map_err(|_| AxumError::OtherError("Settings extension error".to_string()))?;
         let user_repository = UserRepositoryImpl::from_request(req).await?;
-        Ok(Self { user_repository })
+
+        Ok(Self {
+            settings,
+            user_repository,
+        })
     }
 }
 
@@ -40,7 +51,7 @@ impl UserService {
         uid: PID,
     ) -> Result<(RefreshToken, AccessToken), RefreshTokenError> {
         let refresh_token = self.user_repository.issue_refresh_token(uid).await?;
-        let access_token = Self::issue_access_token(uid);
+        let access_token = self.issue_access_token(uid)?;
         Ok((refresh_token, access_token))
     }
 
@@ -104,8 +115,26 @@ impl UserService {
         self.issue_tokens(uid).await
     }
 
-    fn issue_access_token(uid: PID) -> AccessToken {
-        unimplemented!();
+    fn issue_access_token(&self, uid: PID) -> Result<AccessToken, RefreshTokenError> {
+        let expires_at = Utc::now() + Duration::seconds(self.settings.access_exp as i64);
+        let claims = AccessTokenClaims::new(
+            self.settings.access_iss.to_owned(),
+            uid,
+            expires_at.timestamp() as usize,
+        );
+
+        let secret =
+            EncodingKey::from_base64_secret(&self.settings.access_secret).map_err(|err| {
+                tracing::error!("in issue_access_token: secret key decoding error: {}", err);
+                RefreshTokenError::Other
+            })?;
+
+        encode(&Header::default(), &claims, &secret)
+            .map(AccessToken)
+            .map_err(|err| {
+                tracing::error!("in issue_access_token: encoding error: {}", err);
+                RefreshTokenError::Other
+            })
     }
 
     /// Access tokenを検証する。
