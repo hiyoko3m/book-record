@@ -11,17 +11,24 @@ use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{ClientId, ClientSecret, IssuerUrl, RedirectUrl};
 use sqlx::postgres::PgPool;
+use tower_http::trace::TraceLayer;
 
 use self::controller::{book::book_app, user::user_app};
 use self::settings::Settings;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
-    tracing::info!("initialization start");
-
     // .envファイル読み込み
     dotenv().ok();
+
+    let trace_level = if std::env::var("DEBUG").is_ok() {
+        tracing::Level::DEBUG
+    } else {
+        tracing::Level::INFO
+    };
+    tracing_subscriber::fmt().with_max_level(trace_level).init();
+
+    tracing::info!("initialization start");
 
     // 設定変数の初期化
     let settings = envy::from_env::<Settings>().expect(
@@ -66,7 +73,8 @@ async fn main() {
             .layer(AddExtensionLayer::new(settings))
             .layer(AddExtensionLayer::new(id_cli))
             .layer(AddExtensionLayer::new(pg_pool))
-            .layer(AddExtensionLayer::new(redis_cli)),
+            .layer(AddExtensionLayer::new(redis_cli))
+            .layer(TraceLayer::new_for_http()),
     );
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));

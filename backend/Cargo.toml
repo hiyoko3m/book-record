@@ -9,7 +9,7 @@ edition = "2021"
 axum = { version = "^0.3", features = ["headers"] }
 tokio = { version = "^1.12.0", features = ["macros", "rt-multi-thread"] }
 tower = { version = "^0.4.10", features = [] }
-tower-http = { version = "^0.1.1", features = ["fs"] }
+tower-http = { version = "^0.1.1", features = ["fs", "trace"] }
 hyper = "^0.14.14"
 headers = "^0.3"
 
