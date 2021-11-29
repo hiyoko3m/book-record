@@ -6,7 +6,9 @@ use chrono::{Duration, Utc};
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
-use redis::{AsyncCommands, Client as RedisClient};
+use redis::{
+    aio::ConnectionLike, AsyncCommands, Client as RedisClient, ErrorKind, RedisError, RedisResult,
+};
 use sqlx::{postgres::PgPool, Error as SqlxError, Row};
 use uuid::Uuid;
 
@@ -57,6 +59,23 @@ where
             redis_cli,
             client,
         })
+    }
+}
+
+impl UserRepositoryImpl {
+    /// Redisから値を取得し、取得した後の値は削除する
+    async fn get_one_time_code<C>(&self, con: &mut C, key: &str) -> RedisResult<String>
+    where
+        C: ConnectionLike + AsyncCommands,
+    {
+        let mut pipe = redis::pipe();
+        pipe.atomic()
+            .cmd("GET")
+            .arg(key)
+            .cmd("DEL")
+            .arg(key)
+            .ignore();
+        pipe.query_async(con).await.map(|(res,): (String,)| res)
     }
 }
 
@@ -218,11 +237,9 @@ impl UserRepository for UserRepositoryImpl {
             LoginError::Other
         })?;
 
-        let info: String = con
-            .get(format!(
-                "{}{}",
-                self.settings.login_session_prefix, session_id
-            ))
+        let key = format!("{}{}", self.settings.login_session_prefix, session_id);
+        let info: String = self
+            .get_one_time_code(&mut con, &key)
             .await
             .map_err(|err| {
                 tracing::info!(
