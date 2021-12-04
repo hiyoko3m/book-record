@@ -1,0 +1,41 @@
+name: CI for IdP mock
+on:
+  push:
+    paths:
+      - 'idp_mock/**'
+      - '.github/workflows/ci_idp.yaml'
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache Cargo's outputs
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          idp_mock/target
+        key: ${{ runner.os }}-${{ hashFiles('idp_mock/Cargo.lock') }}
+
+    - name: Formatter
+      run: |
+        cargo fmt --check
+
+    - name: Check codes
+      run: |
+        cargo check
+
+    - name: Linter
+      run: |
+        cargo clippy
+
+    - name: Test
+      run: |
+        cargo test
