@@ -32,25 +32,24 @@ use tower_http::trace::TraceLayer;
 #[derive(Debug, Clone)]
 struct Settings {
     base_url: String,
-    port: u16,
     rsa_pem: String,
 }
 
 async fn metadata(Extension(settings): Extension<Settings>) -> Json<CoreProviderMetadata> {
     let provider_metadata = CoreProviderMetadata::new(
-        IssuerUrl::new(format!("{}:{}", settings.base_url, settings.port)).unwrap(),
-        AuthUrl::new(format!("{}:{}/auth", settings.base_url, settings.port)).unwrap(),
-        JsonWebKeySetUrl::new(format!("{}:{}/certs", settings.base_url, settings.port)).unwrap(),
+        IssuerUrl::new(settings.base_url.to_owned()).unwrap(),
+        AuthUrl::new(format!("{}/auth", settings.base_url)).unwrap(),
+        JsonWebKeySetUrl::new(format!("{}/certs", settings.base_url)).unwrap(),
         vec![ResponseTypes::new(vec![CoreResponseType::Code])],
         vec![CoreSubjectIdentifierType::Public],
         vec![CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256],
         EmptyAdditionalProviderMetadata {},
     )
     .set_token_endpoint(Some(
-        TokenUrl::new(format!("{}:{}/token", settings.base_url, settings.port)).unwrap(),
+        TokenUrl::new(format!("{}/token", settings.base_url)).unwrap(),
     ))
     .set_userinfo_endpoint(Some(
-        UserInfoUrl::new(format!("{}:{}/userinfo", settings.base_url, settings.port)).unwrap(),
+        UserInfoUrl::new(format!("{}/userinfo", settings.base_url)).unwrap(),
     ))
     .set_scopes_supported(Some(vec![
         Scope::new("openid".to_string()),
@@ -117,7 +116,7 @@ async fn id_token(
 
     let id_token = CoreIdToken::new(
         CoreIdTokenClaims::new(
-            IssuerUrl::new(format!("{}:{}", settings.base_url, settings.port)).unwrap(),
+            IssuerUrl::new(format!("{}", settings.base_url)).unwrap(),
             vec![Audience::new(basic.username().to_string())],
             Utc::now() + Duration::seconds(300),
             Utc::now(),
@@ -224,7 +223,8 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let base_url = std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost".to_string());
+    let base_url =
+        std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8001".to_string());
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "8001".to_string())
         .parse::<u16>()
@@ -233,11 +233,7 @@ async fn main() {
     let mut file = File::open(rsa_pem_file).unwrap();
     let mut rsa_pem = String::new();
     file.read_to_string(&mut rsa_pem).unwrap();
-    let settings = Settings {
-        base_url,
-        port,
-        rsa_pem,
-    };
+    let settings = Settings { base_url, rsa_pem };
 
     let code_map: HashMap<String, AuthInfo> = HashMap::new();
 
