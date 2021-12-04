@@ -27,15 +27,19 @@ jobs:
     - name: Formatter
       run: |
         cargo fmt -- --check
+      working-directory: ./idp_mock
 
     - name: Check codes
       run: |
         cargo check
+      working-directory: ./idp_mock
 
     - name: Linter
       run: |
         cargo clippy
+      working-directory: ./idp_mock
 
     - name: Test
       run: |
         cargo test
+      working-directory: ./idp_mock
