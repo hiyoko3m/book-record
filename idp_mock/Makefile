@@ -2,6 +2,9 @@
 	run\
 	build\
 	stop\
+	check\
+	format\
+	lint\
 
 run:
 	docker run -v $(PWD)/creds:/tmp/idp_mock --name idp_mock_server \
@@ -17,3 +20,12 @@ build:
 stop:
 	docker stop idp_mock_server
 	docker rm idp_mock_server
+
+check: format lint
+	cargo check
+
+format:
+	cargo fmt
+
+lint:
+	cargo clippy -- --no-deps

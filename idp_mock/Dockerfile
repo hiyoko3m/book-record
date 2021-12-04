@@ -1,4 +1,4 @@
-FROM rust:1.56.0 AS builder
+FROM rust:1.57.0 AS builder
 WORKDIR /usr/src/idp_mock
 # packageのインストールをキャッシュさせる
 COPY Cargo.toml Cargo.lock ./

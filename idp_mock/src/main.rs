@@ -87,9 +87,9 @@ async fn jwks(Extension(settings): Extension<Settings>) -> Json<CoreJsonWebKeySe
 #[derive(Debug, serde::Deserialize)]
 struct TokenPayload {
     code: String,
-    redirect_uri: String,
-    grant_type: String,
-    code_verifier: String,
+    _redirect_uri: String,
+    _grant_type: String,
+    _code_verifier: String,
 }
 
 async fn id_token(
@@ -116,7 +116,7 @@ async fn id_token(
 
     let id_token = CoreIdToken::new(
         CoreIdTokenClaims::new(
-            IssuerUrl::new(format!("{}", settings.base_url)).unwrap(),
+            IssuerUrl::new(settings.base_url).unwrap(),
             vec![Audience::new(basic.username().to_string())],
             Utc::now() + Duration::seconds(300),
             Utc::now(),
@@ -141,14 +141,14 @@ async fn id_token(
 
 #[derive(Debug, serde::Deserialize)]
 struct AuthPayload {
-    client_id: String,
-    response_type: String,
-    scope: String,
+    _client_id: String,
+    _response_type: String,
+    _scope: String,
     redirect_uri: String,
     state: String,
     nonce: String,
-    code_challenge: String,
-    code_challenge_method: String, // S256のみとする
+    _code_challenge: String,
+    _code_challenge_method: String, // S256のみとする
 }
 
 async fn auth_form(Query(payload): Query<AuthPayload>) -> Html<String> {
