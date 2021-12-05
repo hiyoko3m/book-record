@@ -1,4 +1,9 @@
+.dockerignore
+.env
+.mockserver
+.pgmount
+
+Makefile
+compose.yaml
 target/
 
-.env
-.dockerignore

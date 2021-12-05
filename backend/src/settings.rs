@@ -2,14 +2,23 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
+    #[serde(default = "default_port")]
+    pub port: u16,
+
+    #[serde(default = "default_database_url")]
     pub database_url: String,
+    #[serde(default = "default_redis_url")]
     pub redis_url: String,
 
     // OpenID Connectのprovider
     // 最後にslashを入れてはいけない
+    #[serde(default = "default_id_provider_url")]
     pub id_provider_url: String,
+    #[serde(default = "default_id_provider_client_id")]
     pub id_provider_client_id: String,
+    #[serde(default = "default_id_provider_client_secret")]
     pub id_provider_client_secret: String,
+    #[serde(default = "default_id_provider_redirect_url")]
     pub id_provider_redirect_url: String,
 
     // Redis
@@ -36,6 +45,34 @@ pub struct Settings {
 
     #[serde(default = "default_refresh_key")]
     pub refresh_token_cookie_name: String,
+}
+
+fn default_port() -> u16 {
+    8000
+}
+
+fn default_database_url() -> String {
+    "postgres://book_record:book_record@localhost/book_record".to_string()
+}
+
+fn default_redis_url() -> String {
+    "redis://:dummy@localhost".to_string()
+}
+
+fn default_id_provider_url() -> String {
+    "http://localhost:8001".to_string()
+}
+
+fn default_id_provider_client_id() -> String {
+    "id".to_string()
+}
+
+fn default_id_provider_client_secret() -> String {
+    "secret".to_string()
+}
+
+fn default_id_provider_redirect_url() -> String {
+    "http://localhost:8000".to_string()
 }
 
 fn default_login_session_prefix() -> String {

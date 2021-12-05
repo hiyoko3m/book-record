@@ -64,6 +64,8 @@ async fn main() {
         ),
     );
 
+    let addr = SocketAddr::from(([0, 0, 0, 0], settings.port));
+
     // axumのアプリケーション構築
     let app = Router::new().nest(
         "/v1",
@@ -76,8 +78,6 @@ async fn main() {
             .layer(AddExtensionLayer::new(redis_cli))
             .layer(TraceLayer::new_for_http()),
     );
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
 
     tracing::info!(
         "initialization complete; now the server is listening on {}",

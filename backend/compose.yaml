@@ -1,15 +1,35 @@
 services:
-  mockserver:
-    image: mockserver/mockserver:latest
-    container_name: mockserver
+  app:
+    image: book_record_backend
+    container_name: book_record_backend
+    profiles:
+      - app
+      - dep
+    depends_on:
+      - idp
+      - postgres
+      - redis
+    ports:
+      - 8000:8000
+    environment:
+      PORT: 8000
+      DATABASE_URL: postgres://book_record:book_record@postgres/book_record
+      REDIS_URL: redis://:dummy@redis
+      ID_PROVIDER_URL: http://idp:8001
+
+  idp:
+    image: idp_mock
+    container_name: idp_mock_server
     profiles:
       - dep
     ports:
-      - 1080:1080
+      - 8001:8001
     environment:
-      MOCKSERVER_INITIALIZATION_JSON_PATH: /tmp/mockserver/data/init.json
+      PORT: 8001
+      BASE_URL: http://idp:8001
+      RSA_PEM_FILE: /tmp/idp_mock/rsa_key.pem
     volumes:
-      - ./.mockserver:/tmp/mockserver/data
+      - ./../idp_mock/creds:/tmp/idp_mock
 
   postgres:
     image: postgres
@@ -19,8 +39,8 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_USER: hyo
-      POSTGRES_PASSWORD: hyo
+      POSTGRES_USER: book_record
+      POSTGRES_PASSWORD: book_record
       POSTGRES_DB: book_record
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
