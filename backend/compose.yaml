@@ -26,7 +26,6 @@ services:
       - 8001:8001
     environment:
       PORT: 8001
-      BASE_URL: http://idp:8001
       RSA_PEM_FILE: /tmp/idp_mock/rsa_key.pem
     volumes:
       - ./../idp_mock/creds:/tmp/idp_mock

@@ -15,7 +15,7 @@ use axum::{
     AddExtensionLayer, Json, Router,
 };
 use chrono::{Duration, Utc};
-use headers::{authorization::Basic, Authorization};
+use headers::{authorization::Basic, Authorization, Host};
 use openidconnect::core::{
     CoreClaimName, CoreIdToken, CoreIdTokenClaims, CoreIdTokenFields, CoreJsonWebKeySet,
     CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreResponseType, CoreRsaPrivateSigningKey,
@@ -31,25 +31,32 @@ use tower_http::trace::TraceLayer;
 
 #[derive(Debug, Clone)]
 struct Settings {
-    base_url: String,
+    base_url: Option<String>,
     rsa_pem: String,
 }
 
-async fn metadata(Extension(settings): Extension<Settings>) -> Json<CoreProviderMetadata> {
+async fn metadata(
+    Extension(settings): Extension<Settings>,
+    TypedHeader(host): TypedHeader<Host>,
+) -> Json<CoreProviderMetadata> {
+    let host = if let Some(base_url) = settings.base_url {
+        base_url
+    } else {
+        format!("http://{}", host.to_string())
+    };
+
     let provider_metadata = CoreProviderMetadata::new(
-        IssuerUrl::new(settings.base_url.to_owned()).unwrap(),
-        AuthUrl::new(format!("{}/auth", settings.base_url)).unwrap(),
-        JsonWebKeySetUrl::new(format!("{}/certs", settings.base_url)).unwrap(),
+        IssuerUrl::new(host.to_owned()).unwrap(),
+        AuthUrl::new(format!("{}/auth", host)).unwrap(),
+        JsonWebKeySetUrl::new(format!("{}/certs", host)).unwrap(),
         vec![ResponseTypes::new(vec![CoreResponseType::Code])],
         vec![CoreSubjectIdentifierType::Public],
         vec![CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256],
         EmptyAdditionalProviderMetadata {},
     )
-    .set_token_endpoint(Some(
-        TokenUrl::new(format!("{}/token", settings.base_url)).unwrap(),
-    ))
+    .set_token_endpoint(Some(TokenUrl::new(format!("{}/token", host)).unwrap()))
     .set_userinfo_endpoint(Some(
-        UserInfoUrl::new(format!("{}/userinfo", settings.base_url)).unwrap(),
+        UserInfoUrl::new(format!("{}/userinfo", host)).unwrap(),
     ))
     .set_scopes_supported(Some(vec![
         Scope::new("openid".to_string()),
@@ -94,11 +101,18 @@ struct TokenPayload {
 
 async fn id_token(
     TypedHeader(Authorization(basic)): TypedHeader<Authorization<Basic>>,
+    TypedHeader(host): TypedHeader<Host>,
     Extension(settings): Extension<Settings>,
     Extension(code_map): Extension<Arc<Mutex<HashMap<String, AuthInfo>>>>,
     Form(payload): Form<TokenPayload>,
 ) -> Result<Json<CoreTokenResponse>, StatusCode> {
     tracing::info!("{:?}", payload);
+
+    let host = if let Some(base_url) = settings.base_url {
+        base_url
+    } else {
+        format!("http://{}", host.to_string())
+    };
 
     let code_map = Arc::clone(&code_map);
     let code_map = code_map.lock().unwrap();
@@ -116,7 +130,7 @@ async fn id_token(
 
     let id_token = CoreIdToken::new(
         CoreIdTokenClaims::new(
-            IssuerUrl::new(settings.base_url).unwrap(),
+            IssuerUrl::new(host).unwrap(),
             vec![Audience::new(basic.username().to_string())],
             Utc::now() + Duration::seconds(300),
             Utc::now(),
@@ -223,13 +237,13 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let base_url =
-        std::env::var("BASE_URL").unwrap_or_else(|_| "http://localhost:8001".to_string());
+    let base_url = std::env::var("BASE_URL").ok();
     let port = std::env::var("PORT")
         .unwrap_or_else(|_| "8001".to_string())
         .parse::<u16>()
         .unwrap();
-    let rsa_pem_file = std::env::var("RSA_PEM_FILE").unwrap();
+    let rsa_pem_file =
+        std::env::var("RSA_PEM_FILE").unwrap_or_else(|_| "creds/rsa_key.pem".to_string());
     let mut file = File::open(rsa_pem_file).unwrap();
     let mut rsa_pem = String::new();
     file.read_to_string(&mut rsa_pem).unwrap();
