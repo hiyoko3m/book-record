@@ -16,6 +16,7 @@ services:
       DATABASE_URL: postgres://book_record:book_record@postgres/book_record
       REDIS_URL: redis://:dummy@redis
       ID_PROVIDER_URL: http://idp:8001
+      DEBUG:
 
   idp:
     image: idp_mock
