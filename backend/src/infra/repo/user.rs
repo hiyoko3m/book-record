@@ -6,9 +6,7 @@ use chrono::{Duration, Utc};
 use openidconnect::core::CoreClient;
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{AuthorizationCode, Nonce, PkceCodeChallenge, PkceCodeVerifier, TokenResponse};
-use redis::{
-    aio::ConnectionLike, AsyncCommands, Client as RedisClient, ErrorKind, RedisError, RedisResult,
-};
+use redis::{aio::ConnectionLike, AsyncCommands, Client as RedisClient, RedisResult};
 use sqlx::{postgres::PgPool, Error as SqlxError, Row};
 use uuid::Uuid;
 
@@ -81,9 +79,9 @@ impl UserRepositoryImpl {
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn get_user(&self, id: entity::PID) -> Result<UserEntity, UserError> {
+    async fn get_user(&self, id: entity::Pid) -> Result<UserEntity, UserError> {
         sqlx::query_as::<_, UserRow>("SELECT * FROM users WHERE id = $1")
-            .bind(id as super::PID)
+            .bind(id as super::Pid)
             .fetch_one(&self.pool)
             .await
             .map(UserEntity::from)
@@ -105,21 +103,21 @@ impl UserRepository for UserRepositoryImpl {
             })
     }
 
-    async fn get_user_id_from_subject(&self, subject: &str) -> Result<entity::PID, UserError> {
+    async fn get_user_id_from_subject(&self, subject: &str) -> Result<entity::Pid, UserError> {
         sqlx::query_as::<_, UserIdRow>("SELECT id FROM users WHERE subject = $1")
             .bind(subject)
             .fetch_one(&self.pool)
             .await
-            .map(entity::PID::from)
+            .map(entity::Pid::from)
             .map_err(|err| match err {
                 SqlxError::RowNotFound => UserError::Nonexistent,
                 _ => UserError::Other,
             })
     }
 
-    async fn does_exist_user_id(&self, user_id: entity::PID) -> Result<bool, UserError> {
+    async fn does_exist_user_id(&self, user_id: entity::Pid) -> Result<bool, UserError> {
         match sqlx::query_as::<_, UserIdRow>("SELECT id FROM users WHERE id = $1")
-            .bind(user_id as super::PID)
+            .bind(user_id as super::Pid)
             .fetch_one(&self.pool)
             .await
         {
@@ -133,7 +131,7 @@ impl UserRepository for UserRepositoryImpl {
         &self,
         subject: String,
         user: UserEntityForCreation,
-    ) -> Result<entity::PID, UserError> {
+    ) -> Result<entity::Pid, UserError> {
         let mut transaction = self.pool.begin().await.map_err(|err| {
             tracing::info!("could not establish transaction: {}", err);
             UserError::Other
@@ -217,8 +215,8 @@ impl UserRepository for UserRepositoryImpl {
             })?;
 
         Ok(LoginSession {
-            session_id: session_id,
-            nonce: nonce,
+            session_id,
+            nonce,
             code_challenge: pkce_challenge,
         })
     }
@@ -350,7 +348,7 @@ impl UserRepository for UserRepositoryImpl {
 
     async fn issue_refresh_token(
         &self,
-        userid: entity::PID,
+        userid: entity::Pid,
     ) -> Result<RefreshToken, RefreshTokenError> {
         let token = Uuid::new_v4().to_string();
 
@@ -387,7 +385,7 @@ impl UserRepository for UserRepositoryImpl {
     async fn verify_refresh_token(
         &self,
         token: RefreshTokenExtract,
-    ) -> Result<entity::PID, RefreshTokenError> {
+    ) -> Result<entity::Pid, RefreshTokenError> {
         let mut con = self.redis_cli.get_async_connection().await.map_err(|err| {
             tracing::error!(
                 "in verify_refresh_token: error in making connection to Redis: {}",

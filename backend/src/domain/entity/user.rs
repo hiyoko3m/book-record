@@ -7,11 +7,11 @@ use openidconnect::PkceCodeChallenge;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use super::PID;
+use super::Pid;
 
 #[derive(Debug, Serialize)]
 pub struct UserEntity {
-    pub id: PID,
+    pub id: Pid,
     pub subject: String,
     pub username: String,
 }
@@ -107,7 +107,7 @@ impl RefreshToken {
         Self { token, expires_at }
     }
 
-    pub fn into_cookie_value(&self, cookie_name: &str, path: &str) -> String {
+    pub fn into_cookie_value(self, cookie_name: &str, path: &str) -> String {
         format!(
             "{}={}; Expires={}; Path={}; HttpOnly",
             cookie_name,
@@ -127,16 +127,16 @@ pub struct AccessToken(pub String);
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccessTokenClaims {
     iss: String,
-    sub: PID,
+    sub: Pid,
     exp: usize,
 }
 
 impl AccessTokenClaims {
-    pub fn new(iss: String, sub: PID, exp: usize) -> Self {
+    pub fn new(iss: String, sub: Pid, exp: usize) -> Self {
         Self { iss, sub, exp }
     }
 
-    pub fn user_id(&self) -> PID {
+    pub fn user_id(&self) -> Pid {
         self.sub
     }
 }

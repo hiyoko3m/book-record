@@ -5,24 +5,24 @@ use super::super::entity::{
         LoginError, LoginSession, RefreshToken, RefreshTokenError, RefreshTokenExtract, SignUpCode,
         SignUpError, UserEntity, UserEntityForCreation, UserError,
     },
-    PID,
+    Pid,
 };
 
 #[async_trait]
 pub trait UserRepository {
-    async fn get_user(&self, id: PID) -> Result<UserEntity, UserError>;
+    async fn get_user(&self, id: Pid) -> Result<UserEntity, UserError>;
 
     async fn get_user_from_subject(&self, subject: &str) -> Result<UserEntity, UserError>;
 
-    async fn get_user_id_from_subject(&self, subject: &str) -> Result<PID, UserError>;
+    async fn get_user_id_from_subject(&self, subject: &str) -> Result<Pid, UserError>;
 
     async fn create_user(
         &self,
         subject: String,
         user: UserEntityForCreation,
-    ) -> Result<PID, UserError>;
+    ) -> Result<Pid, UserError>;
 
-    async fn does_exist_user_id(&self, user_id: PID) -> Result<bool, UserError>;
+    async fn does_exist_user_id(&self, user_id: Pid) -> Result<bool, UserError>;
 
     async fn make_login_session(&self) -> Result<LoginSession, LoginError>;
 
@@ -44,12 +44,12 @@ pub trait UserRepository {
 
     /// 新しいrefresh tokenを発行する。
     /// 古いrefresh tokenがある場合は無効になる。
-    async fn issue_refresh_token(&self, userid: PID) -> Result<RefreshToken, RefreshTokenError>;
+    async fn issue_refresh_token(&self, userid: Pid) -> Result<RefreshToken, RefreshTokenError>;
 
     /// Refresh tokenを検証する。
     /// 紐づけられたuser idを返す。
     async fn verify_refresh_token(
         &self,
         token: RefreshTokenExtract,
-    ) -> Result<PID, RefreshTokenError>;
+    ) -> Result<Pid, RefreshTokenError>;
 }

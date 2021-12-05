@@ -18,7 +18,12 @@ pub fn book_app() -> Router {
             "/book/:id",
             get(get_book).post(update_book).delete(delete_book),
         )
-        .route("/protected", get(|UserId(id): UserId| async { "Hello" }))
+        .route(
+            "/protected",
+            get(|UserId(id): UserId| async move {
+                format!("Hello {}", id);
+            }),
+        )
 }
 
 async fn list_books(book_service: BookService) -> Json<Value> {

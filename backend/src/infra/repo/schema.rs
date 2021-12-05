@@ -1,18 +1,18 @@
 use sqlx::FromRow;
 
-use super::PID;
+use super::Pid;
 use crate::domain::entity::{self, book::BookEntity, user::UserEntity};
 
 #[derive(FromRow)]
 pub struct BookRow {
-    id: PID,
+    id: Pid,
     title: String,
 }
 
 impl From<BookRow> for BookEntity {
     fn from(book_row: BookRow) -> BookEntity {
         Self {
-            id: book_row.id as entity::PID,
+            id: book_row.id as entity::Pid,
             title: book_row.title,
         }
     }
@@ -20,7 +20,7 @@ impl From<BookRow> for BookEntity {
 
 #[derive(FromRow)]
 pub struct UserRow {
-    id: PID,
+    id: Pid,
     subject: String,
     username: String,
 }
@@ -28,7 +28,7 @@ pub struct UserRow {
 impl From<UserRow> for UserEntity {
     fn from(user_row: UserRow) -> UserEntity {
         Self {
-            id: user_row.id as entity::PID,
+            id: user_row.id as entity::Pid,
             subject: user_row.subject,
             username: user_row.username,
         }
@@ -37,11 +37,11 @@ impl From<UserRow> for UserEntity {
 
 #[derive(FromRow)]
 pub struct UserIdRow {
-    id: PID,
+    id: Pid,
 }
 
-impl From<UserIdRow> for entity::PID {
-    fn from(row: UserIdRow) -> entity::PID {
-        row.id as entity::PID
+impl From<UserIdRow> for entity::Pid {
+    fn from(row: UserIdRow) -> entity::Pid {
+        row.id as entity::Pid
     }
 }

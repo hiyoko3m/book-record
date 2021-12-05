@@ -3,4 +3,4 @@ pub mod schema;
 mod session;
 pub mod user;
 
-type PID = i32;
+type Pid = i32;

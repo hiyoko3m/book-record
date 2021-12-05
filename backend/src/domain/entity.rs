@@ -10,7 +10,7 @@ use axum::{
 };
 use serde_json::{json, Value};
 
-pub type PID = u32;
+pub type Pid = u32;
 
 #[derive(Debug)]
 pub enum AxumError {

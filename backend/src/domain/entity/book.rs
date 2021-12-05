@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use super::PID;
+use super::Pid;
 
 #[derive(Debug, Serialize)]
 pub struct BookEntity {
-    pub id: PID,
+    pub id: Pid,
     pub title: String,
 }
 
@@ -13,10 +13,10 @@ pub struct BookEntityForCreation {
     pub title: String,
 }
 
-impl From<(PID, BookEntityForCreation)> for BookEntity {
+impl From<(Pid, BookEntityForCreation)> for BookEntity {
     fn from((id, book): (u32, BookEntityForCreation)) -> BookEntity {
         Self {
-            id: id,
+            id,
             title: book.title,
         }
     }

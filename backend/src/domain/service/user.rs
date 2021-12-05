@@ -11,7 +11,7 @@ use crate::domain::entity::{
         AccessToken, AccessTokenClaims, LoginError, LoginSession, RefreshToken, RefreshTokenError,
         RefreshTokenExtract, SignUpCode, SignUpError, UserEntityForCreation, UserError,
     },
-    AxumError, PID,
+    AxumError, Pid,
 };
 use crate::domain::repo_if::user::UserRepository;
 use crate::infra::repo::user::UserRepositoryImpl;
@@ -49,7 +49,7 @@ impl UserService {
 
     async fn issue_tokens(
         &self,
-        uid: PID,
+        uid: Pid,
     ) -> Result<(RefreshToken, AccessToken), RefreshTokenError> {
         let refresh_token = self.user_repository.issue_refresh_token(uid).await?;
         let access_token = self.issue_access_token(uid)?;
@@ -116,7 +116,7 @@ impl UserService {
         self.issue_tokens(uid).await
     }
 
-    fn issue_access_token(&self, uid: PID) -> Result<AccessToken, RefreshTokenError> {
+    fn issue_access_token(&self, uid: Pid) -> Result<AccessToken, RefreshTokenError> {
         let expires_at = Utc::now() + Duration::seconds(self.settings.access_exp as i64);
         let claims = AccessTokenClaims::new(
             self.settings.access_iss.to_owned(),
@@ -139,7 +139,7 @@ impl UserService {
     }
 }
 
-pub struct UserId(pub PID);
+pub struct UserId(pub Pid);
 
 #[async_trait]
 impl<B> FromRequest<B> for UserId

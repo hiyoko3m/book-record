@@ -36,7 +36,6 @@ impl BookRepository for BookRepositoryImpl {
             .await
             .map_err(|err| {
                 tracing::info!("cannot establish transaction: {}", err);
-                ()
             });
 
         match rows {
@@ -54,7 +53,6 @@ impl BookRepository for BookRepositoryImpl {
                 // TODO
                 // 存在しないIDをいれたときにもここでエラーログが出るのをどうにかしたい
                 tracing::info!("cannot establish transaction: {}", err);
-                ()
             })
             .map(BookEntity::from)
             .ok()
@@ -63,7 +61,6 @@ impl BookRepository for BookRepositoryImpl {
     async fn create_book(&self, book: BookEntityForCreation) -> Result<u32, ()> {
         let mut transaction = self.pool.begin().await.map_err(|err| {
             tracing::info!("cannot establish transaction: {}", err);
-            ()
         })?;
 
         let row = sqlx::query("INSERT INTO books (title) VALUES ($1) RETURNING id")
@@ -72,12 +69,10 @@ impl BookRepository for BookRepositoryImpl {
             .await
             .map_err(|err| {
                 tracing::info!("insert was failed: {}", err);
-                ()
             })?;
 
         transaction.commit().await.map_err(|err| {
             tracing::info!("commiting was failed: {}", err);
-            ()
         })?;
 
         row.try_get::<i32, _>("id")
@@ -85,7 +80,6 @@ impl BookRepository for BookRepositoryImpl {
             .map(|id| id as u32)
             .map_err(|err| {
                 tracing::info!("parsing inserted id was failed: {}", err);
-                ()
             })
     }
 
@@ -93,7 +87,6 @@ impl BookRepository for BookRepositoryImpl {
         let inner = || async move {
             let mut transaction = self.pool.begin().await.map_err(|err| {
                 tracing::info!("cannot establish transaction: {}", err);
-                ()
             })?;
 
             let result = sqlx::query("UPDATE books SET title = $1 WHERE id = $2")
@@ -103,12 +96,10 @@ impl BookRepository for BookRepositoryImpl {
                 .await
                 .map_err(|err| {
                     tracing::info!("update was failed: {}", err);
-                    ()
                 })?;
 
             transaction.commit().await.map_err(|err| {
                 tracing::info!("commiting was failed: {}", err);
-                ()
             })?;
 
             Ok(result.rows_affected() == 1)
@@ -126,7 +117,6 @@ impl BookRepository for BookRepositoryImpl {
         let inner = || async move {
             let mut transaction = self.pool.begin().await.map_err(|err| {
                 tracing::info!("cannot establish transaction: {}", err);
-                ()
             })?;
 
             let result = sqlx::query("DELETE FROM books WHERE id = $1")
@@ -135,12 +125,10 @@ impl BookRepository for BookRepositoryImpl {
                 .await
                 .map_err(|err| {
                     tracing::info!("delete was failed: {}", err);
-                    ()
                 })?;
 
             transaction.commit().await.map_err(|err| {
                 tracing::info!("commiting was failed: {}", err);
-                ()
             })?;
 
             Ok(result.rows_affected() == 1)
