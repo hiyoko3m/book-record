@@ -79,7 +79,7 @@ async fn refresh_tokens(
             .ok_or(RefreshTokenError::InvalidRefreshToken)?
             .to_owned()
     } else {
-        Err(RefreshTokenError::InvalidRefreshToken)?
+        return Err(RefreshTokenError::InvalidRefreshToken);
     };
 
     user_service
