@@ -70,12 +70,17 @@ async fn sign_up(
 
 async fn refresh_tokens(
     user_service: UserService,
-    TypedHeader(cookie): TypedHeader<Cookie>,
+    cookie: Option<TypedHeader<Cookie>>,
     Extension(settings): Extension<Settings>,
 ) -> Result<impl IntoResponse, RefreshTokenError> {
-    let refresh_token_value = cookie
-        .get(&settings.refresh_token_cookie_name)
-        .ok_or(RefreshTokenError::InvalidRefreshToken)?;
+    let refresh_token_value = if let Some(TypedHeader(cookie)) = cookie {
+        cookie
+            .get(&settings.refresh_token_cookie_name)
+            .ok_or(RefreshTokenError::InvalidRefreshToken)?
+            .to_owned()
+    } else {
+        Err(RefreshTokenError::InvalidRefreshToken)?
+    };
 
     user_service
         .refresh_tokens(RefreshTokenExtract(refresh_token_value.to_string()))

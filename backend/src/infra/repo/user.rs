@@ -62,9 +62,10 @@ where
 
 impl UserRepositoryImpl {
     /// Redisから値を取得し、取得した後の値は削除する
-    async fn get_one_time_code<C>(&self, con: &mut C, key: &str) -> RedisResult<String>
+    async fn get_one_time_code<C, T>(&self, con: &mut C, key: &str) -> RedisResult<T>
     where
         C: ConnectionLike + AsyncCommands,
+        T: redis::FromRedisValue,
     {
         let mut pipe = redis::pipe();
         pipe.atomic()
@@ -73,7 +74,7 @@ impl UserRepositoryImpl {
             .cmd("DEL")
             .arg(key)
             .ignore();
-        pipe.query_async(con).await.map(|(res,): (String,)| res)
+        pipe.query_async(con).await.map(|(res,): (T,)| res)
     }
 }
 
@@ -331,13 +332,8 @@ impl UserRepository for UserRepositoryImpl {
             SignUpError::Other
         })?;
 
-        con.get(format!(
-            "{}{}",
-            self.settings.sign_up_session_prefix,
-            code.raw()
-        ))
-        .await
-        .map_err(|err| {
+        let key = format!("{}{}", self.settings.sign_up_session_prefix, code.raw());
+        self.get_one_time_code(&mut con, &key).await.map_err(|err| {
             tracing::info!(
                 "in verify_sign_up_code: invalid or expired sign up code: {}",
                 err
@@ -395,14 +391,13 @@ impl UserRepository for UserRepositoryImpl {
         })?;
 
         // 型が一致しているので、型変換のコードは書かずにおく
-        con.get(format!("{}{}", self.settings.refresh_prefix, token.0))
-            .await
-            .map_err(|err| {
-                tracing::info!(
-                    "in verify_refresh_token: invalid or expired refresh token: {}",
-                    err
-                );
-                RefreshTokenError::InvalidRefreshToken
-            })
+        let key = format!("{}{}", self.settings.refresh_prefix, token.0);
+        self.get_one_time_code(&mut con, &key).await.map_err(|err| {
+            tracing::info!(
+                "in verify_refresh_token: invalid or expired refresh token: {}",
+                err
+            );
+            RefreshTokenError::InvalidRefreshToken
+        })
     }
 }
