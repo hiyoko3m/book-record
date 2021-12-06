@@ -28,7 +28,7 @@ format:
 	cargo fmt
 
 lint:
-	cargo clippy -- --no-deps
+	cargo clippy --all-targets -- --no-deps -D clippy::all
 
 test:
 	cargo test

@@ -36,7 +36,7 @@ jobs:
 
     - name: Linter
       run: |
-        cargo clippy
+        cargo clippy --all-targets -- --no-deps -D clippy::all
       working-directory: ./backend
 
     - name: Test
