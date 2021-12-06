@@ -194,7 +194,7 @@ mod tests {
             .send()
             .await
             .unwrap();
-        let url = reqwest::Url::parse(&res.headers()[reqwest::header::LOCATION].to_str().unwrap())
+        let url = reqwest::Url::parse(res.headers()[reqwest::header::LOCATION].to_str().unwrap())
             .unwrap();
         let pairs = url
             .query_pairs()
