@@ -34,4 +34,9 @@ test:
 	cargo test
 
 medium-test: dep
-	cargo test -- --ignored
+	sqlx database create --database-url postgres://book_record:book_record@localhost/test_book_record
+	sqlx migrate run --database-url postgres://book_record:book_record@localhost/test_book_record
+	-DATABASE_URL=postgres://book_record:book_record@localhost/test_book_record \
+		REFRESH_EXP=20 \
+		cargo test -- --ignored
+	sqlx database drop -y --database-url postgres://book_record:book_record@localhost/test_book_record
