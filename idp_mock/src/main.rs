@@ -94,8 +94,11 @@ async fn jwks(Extension(settings): Extension<Settings>) -> Json<CoreJsonWebKeySe
 #[derive(Debug, serde::Deserialize)]
 struct TokenPayload {
     code: String,
+    #[serde(rename = "redirect_uri")]
     _redirect_uri: String,
+    #[serde(rename = "grant_type")]
     _grant_type: String,
+    #[serde(rename = "code_verifier")]
     _code_verifier: String,
 }
 
@@ -155,13 +158,18 @@ async fn id_token(
 
 #[derive(Debug, serde::Deserialize)]
 struct AuthPayload {
+    #[serde(rename = "client_id")]
     _client_id: String,
+    #[serde(rename = "response_type")]
     _response_type: String,
+    #[serde(rename = "scope")]
     _scope: String,
     redirect_uri: String,
     state: String,
     nonce: String,
+    #[serde(rename = "code_challenge")]
     _code_challenge: String,
+    #[serde(rename = "code_challenge_method")]
     _code_challenge_method: String, // S256のみとする
 }
 
