@@ -71,15 +71,16 @@ paths:
             application/json:
               schema:
                 type: string
-        "400":
-          description: "ユーザが存在しない。ユーザ作成のためのone-time codeを返す"
+        "403":
+          description:
+            "ユーザが存在しない：ユーザ作成のためのone-time codeを返す。IDトークンが不正：空文字が返る"
           content:
             application/json:
               schema:
-                type: string
-        "403":
-          description:
-            "IDトークンが不正"
+                type: object
+                properties:
+                  error:
+                    type: string
       security: []
   /signup:
     post:
@@ -163,7 +164,6 @@ paths:
                     type: "array"
                     items:
                       $ref: "#/components/schemas/Book"
-  /book:
     post:
       tags:
       - "book"
@@ -188,7 +188,7 @@ paths:
                     type: "integer"
         "422":
           description: "無効な入力"
-  /book/{bookId}:
+  /books/{bookId}:
     get:
       tags:
       - "book"
@@ -216,7 +216,7 @@ paths:
           description: "存在しない本のID"
         "422":
           description: "無効な入力"
-    post:
+    put:
       tags:
       - "book"
       summary: "本の情報の更新"
@@ -271,7 +271,7 @@ paths:
       description: "条件に合う読書記録を全て表示する"
       operationId: "listRecords"
       parameters:
-      - name: "userIds"
+      - name: "user_ids"
         in: "query"
         description: "表示対象のユーザID配列"
         schema:
@@ -279,7 +279,7 @@ paths:
           items:
             type: "integer"
             format: "int32"
-      - name: "bookIds"
+      - name: "book_ids"
         in: "query"
         description: "表示対象の本のID配列"
         schema:
@@ -287,13 +287,13 @@ paths:
           items:
             type: "integer"
             format: "int32"
-      - name: "sinceDatetime"
+      - name: "since_datetime"
         in: "query"
         description: "この時刻以降の読書記録を表示する（等号を含む）"
         schema:
           type: "string"
           format: "date-time"
-      - name: "untilDatetime"
+      - name: "until_datetime"
         in: "query"
         description: "この時刻以前の読書記録を表示する（等号を含まない）"
         schema:
@@ -311,7 +311,6 @@ paths:
                     type: "array"
                     items:
                       $ref: "#/components/schemas/Record"
-  /record:
     post:
       tags:
       - "record"
@@ -321,15 +320,15 @@ paths:
         description: "登録する読書記録情報"
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
-              $ref: "#/components/schemas/RecordForm"
+              $ref: "#/components/schemas/RecordSent"
       responses:
         "200":
           description: "成功時"
         "422":
           description: "無効な入力"
-  /record/{recordId}:
+  /records/{recordId}:
     get:
       tags:
       - "record"
@@ -354,10 +353,10 @@ paths:
           description: "存在しない読書記録ID"
         "422":
           description: "無効な入力"
-    post:
+    put:
       tags:
       - "record"
-      summary: "読書記録のフォームからの更新"
+      summary: "読書記録の更新"
       operationId: "udpateRecord"
       parameters:
       - name: "recordId"
@@ -371,9 +370,9 @@ paths:
         description: "変更する読書記録情報"
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
-              $ref: "#/components/schemas/RecordForm"
+              $ref: "#/components/schemas/RecordSent"
       responses:
         "200":
           description: "成功時"
@@ -422,6 +421,7 @@ components:
     Book:
       type: "object"
       required:
+      - "id"
       - "title"
       properties:
         id:
@@ -436,31 +436,10 @@ components:
       properties:
         title:
           type: "string"
-    RecordForm:
-      type: "object"
-      required:
-      - "bookId"
-      - "startPage"
-      - "endPage"
-      properties:
-        bookId:
-          description: "読んだ本のID"
-          type: "integer"
-          format: "int32"
-        startPage:
-          description: "開始ページ"
-          type: "integer"
-          format: "int32"
-        endPage:
-          description: "終了ページ"
-          type: "integer"
-          format: "int32"
-        comment:
-          description: "備考・コメント"
-          type: "string"
     Record:
       type: "object"
       required:
+      - "id"
       - "userId"
       - "bookId"
       - "startPage"
@@ -490,6 +469,28 @@ components:
           description: "記録の登録日時"
           type: "string"
           format: "date-time"
+        comment:
+          description: "備考・コメント"
+          type: "string"
+    RecordSent:
+      type: "object"
+      required:
+      - "bookId"
+      - "startPage"
+      - "endPage"
+      properties:
+        bookId:
+          description: "読んだ本のID"
+          type: "integer"
+          format: "int32"
+        startPage:
+          description: "開始ページ"
+          type: "integer"
+          format: "int32"
+        endPage:
+          description: "終了ページ"
+          type: "integer"
+          format: "int32"
         comment:
           description: "備考・コメント"
           type: "string"
