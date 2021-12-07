@@ -12,10 +12,9 @@ use crate::domain::service::user::UserId;
 
 pub fn book_app() -> Router {
     Router::new()
-        .route("/books", get(list_books))
-        .route("/book", post(create_book))
+        .route("/books", get(list_books).post(create_book))
         .route(
-            "/book/:id",
+            "/books/:id",
             get(get_book).post(update_book).delete(delete_book),
         )
         .route(
