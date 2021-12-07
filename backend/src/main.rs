@@ -11,7 +11,7 @@ use openidconnect::core::{CoreClient, CoreProviderMetadata};
 use openidconnect::reqwest::async_http_client;
 use openidconnect::{ClientId, ClientSecret, IssuerUrl, RedirectUrl};
 use sqlx::postgres::PgPool;
-use tower_http::trace::TraceLayer;
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 use self::controller::{book::book_app, user::user_app};
 use self::settings::Settings;
@@ -76,7 +76,8 @@ async fn main() {
             .layer(AddExtensionLayer::new(id_cli))
             .layer(AddExtensionLayer::new(pg_pool))
             .layer(AddExtensionLayer::new(redis_cli))
-            .layer(TraceLayer::new_for_http()),
+            .layer(TraceLayer::new_for_http())
+            .layer(CorsLayer::permissive()),
     );
 
     tracing::info!(
