@@ -1,9 +1,4 @@
-use axum::{
-    extract::Path,
-    http::StatusCode,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{extract::Path, http::StatusCode, routing::get, Json, Router};
 use serde_json::{json, Value};
 
 use crate::domain::entity::book::{BookEntity, BookEntityForCreation};
