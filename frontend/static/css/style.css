@@ -1,0 +1,10 @@
+.sec-title {
+  padding: 5px 0px 5px 20px;
+  margin: 20px 0px 20px;
+  border-left: 4px solid #000;
+}
+
+.book-list-item:hover {
+  background: #e9ecef;
+  cursor: pointer;
+}
