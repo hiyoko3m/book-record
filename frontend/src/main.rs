@@ -1,5 +1,4 @@
 mod atom;
-mod molecule;
 mod organism;
 mod page;
 mod routes;
