@@ -1,4 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -7,6 +8,11 @@ use crate::atom::common::{ButtonSecondary, ModalButtonSecondary};
 #[derive(Clone, Default, PartialEq, Deserialize)]
 pub struct Book {
     pub id: usize,
+    pub title: String,
+}
+
+#[derive(Clone, Default, PartialEq, Serialize)]
+pub struct BookForSend {
     pub title: String,
 }
 
@@ -64,7 +70,7 @@ pub fn books_list(
         .collect();
 
     html! {
-        <div class="row row-cols-1 row-cols-md-2 g-4">
+        <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
             { books }
         </div>
     }
@@ -91,5 +97,50 @@ pub fn book_list_item(book: &BookItemProps) -> Html {
                 </div>
             </div>
         </div>
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct CreateBookFormProps {
+    pub on_submit: Callback<BookForSend>,
+}
+
+#[function_component(CreateBookForm)]
+pub fn create_book_form(CreateBookFormProps { on_submit }: &CreateBookFormProps) -> Html {
+    let title_ref = use_node_ref();
+    let on_create = {
+        let title_ref = title_ref.clone();
+        let on_submit = on_submit.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+
+            if let Some(title_input) = title_ref.cast::<HtmlInputElement>() {
+                let book = BookForSend {
+                    title: title_input.value(),
+                };
+                on_submit.emit(book);
+                title_input.set_value("");
+            }
+        })
+    };
+
+    html! {
+        <>
+            <button class="btn d-inline-flex align-item-center lh-1 fold-button collapsed" data-bs-toggle="collapse" data-bs-target="#create-book-form" aria-expanded="true" aria-current="true">{"新しい本の追加"}</button>
+            <div class="collapse" id="create-book-form">
+                <div class="mx-2 mt-3 p-3 border border-2">
+                    <form class="row">
+                        <label for="title" class="col-sm-2 col-form-label">{ "タイトル" }</label>
+                        <div class="col-sm-10">
+                            <input ref={title_ref} type="text" class="form-control" id="title" />
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary" onclick={on_create}>{ "作成" }</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </>
     }
 }

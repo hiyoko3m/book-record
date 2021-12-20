@@ -8,3 +8,15 @@
   background: #e9ecef;
   cursor: pointer;
 }
+
+.fold-button::before {
+  display: inline-block;
+  content: '▲';
+  transform: rotate(180deg);
+  transition: 0.2s transform;
+  color: #999;
+}
+
+.fold-button.collapsed::before {
+  transform: rotate(90deg);
+}

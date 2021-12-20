@@ -2,7 +2,9 @@ mod atom;
 mod organism;
 mod page;
 mod routes;
+mod settings;
 
+use url::Url;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -12,6 +14,7 @@ use self::page::{
     home::HomePage,
 };
 use self::routes::Route;
+use self::settings::Settings;
 
 fn switch(routes: &Route) -> Html {
     match routes {
@@ -24,9 +27,15 @@ fn switch(routes: &Route) -> Html {
 
 #[function_component(App)]
 fn app() -> Html {
+    let settings = use_state(|| Settings {
+        base_url: Url::parse("http://localhost:8000/v1/").unwrap(),
+    });
+
     html! {
         <BrowserRouter>
-            <Switch<Route> render={Switch::render(switch)} />
+            <ContextProvider<Settings> context={(*settings).clone()}>
+                <Switch<Route> render={Switch::render(switch)} />
+            </ContextProvider<Settings>>
         </BrowserRouter>
     }
 }
