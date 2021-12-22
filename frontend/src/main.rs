@@ -28,7 +28,7 @@ fn switch(routes: &Route) -> Html {
 #[function_component(App)]
 fn app() -> Html {
     let settings = use_state(|| Settings {
-        base_url: Url::parse("http://localhost:8000/v1/").unwrap(),
+        base_url: Url::parse("https://book-record-hiyoko3m.herokuapp.com/v1/").unwrap(),
     });
 
     html! {
