@@ -15,7 +15,7 @@ jobs:
   # check
   deploy:
     name: build and push
-    needs: check
+    #needs: check
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
