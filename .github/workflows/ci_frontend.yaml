@@ -32,6 +32,11 @@ jobs:
           frontend/target
         key: ${{ runner.os }}-${{ hashFiles('frontend/Cargo.lock') }}
 
+    - name: Setup Trunk
+      run: |
+        rustup target add wasm32-unknown-unknown
+        cargo install trunk
+
     - name: Prepare dotenv
       run: |
         echo "BASE_URL=${{ secrets.FRONT_BASE_URL }}" >> .env
