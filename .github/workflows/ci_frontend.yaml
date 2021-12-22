@@ -1,9 +1,9 @@
-name: CI for backend
+name: CI for frontend
 on:
   push:
     paths:
-      - 'backend/**'
-      - '.github/workflows/ci_backend.yaml'
+      - 'frontend/**'
+      - '.github/workflows/ci_frontend.yaml'
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
