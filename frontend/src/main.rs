@@ -4,6 +4,7 @@ mod page;
 mod routes;
 mod settings;
 
+use dotenv_codegen::dotenv;
 use url::Url;
 use yew::prelude::*;
 use yew_router::prelude::*;
@@ -27,8 +28,9 @@ fn switch(routes: &Route) -> Html {
 
 #[function_component(App)]
 fn app() -> Html {
+    let base_url = dotenv!("BASE_URL");
     let settings = use_state(|| Settings {
-        base_url: Url::parse("https://book-record-hiyoko3m.herokuapp.com/v1/").unwrap(),
+        base_url: Url::parse(base_url).unwrap(),
     });
 
     html! {
