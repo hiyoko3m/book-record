@@ -1,0 +1,48 @@
+name: CI for backend
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci_backend.yaml'
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  # TODO
+  # check
+  deploy:
+    name: build and push
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Cache Cargo's outputs
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          frontend/target
+        key: ${{ runner.os }}-${{ hashFiles('frontend/Cargo.lock') }}
+
+    - name: Prepare dotenv
+      run: |
+        echo "BASE_URL=${{ secrets.FRONT_BASE_URL }}" >> .env
+      working-directory: ./frontend
+
+    - name: Build
+      run: |
+        trunk build --release
+      working-directory: ./frontend
+
+    - name: Push
+      run: |
+        aws s3 sync dist/ s3://${{ secrets.FRONT_BUCKET_NAME }}/dist/ \
+      working-directory: ./frontend
