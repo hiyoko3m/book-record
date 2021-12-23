@@ -4,7 +4,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 use crate::atom::common::SectionTitle;
-use crate::organism::book::{Book, BookForSend, BooksList, CreateBookForm};
+use crate::organism::book::{Book, BookForSend, BooksList, CreateBookForm, EditBookForm};
 use crate::organism::common::{DeleteModal, Footer, Header};
 use crate::routes::Route;
 use crate::settings::Settings;
@@ -138,13 +138,164 @@ pub struct BooksDetailProps {
     pub id: usize,
 }
 
-#[function_component(BooksDetail)]
+#[derive(Deserialize)]
+struct BooksDetailResponse {
+    book: Book,
+}
+
+#[function_component(BooksDetailPage)]
 pub fn describe_book(props: &BooksDetailProps) -> Html {
+    let settings = use_context::<Settings>().expect("settings context cannot be found");
+
+    let book = use_state(|| None);
+
+    let fetch_book = {
+        let settings = settings.clone();
+        |id, book: UseStateHandle<Option<Book>>| async move {
+            let response: BooksDetailResponse = Request::get(
+                settings
+                    .base_url
+                    .join(&format!("books/{}", id))
+                    .unwrap()
+                    .as_str(),
+            )
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+            book.set(Some(response.book));
+        }
+    };
+
+    {
+        let book = book.clone();
+        let id = props.id;
+        use_effect_with_deps(
+            move |_| {
+                let book = book.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    fetch_book(id, book).await;
+                });
+                || ()
+            },
+            (),
+        );
+    }
+
+    let history = use_history().expect("history API encounters a critical error");
+    let on_back_click = Callback::once(move |_| history.back());
+
+    let content = if let Some(book) = (*book).clone() {
+        html! { <SectionTitle title={ book.title } /> }
+    } else {
+        html! { <div>{ "読み込み中" } </div> }
+    };
+
     html! {
         <>
-            <div>{
-                format!("describe book {}", props.id.clone())
-            }</div>
+            <Header />
+            <div class="container-lg">
+                { content }
+                <a href="#" onclick={on_back_click}>{ "前のページに戻る" }</a>
+            </div>
+            <Footer />
+        </>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct BooksEditProps {
+    pub id: usize,
+}
+
+#[function_component(BooksEditPage)]
+pub fn edit_book(props: &BooksEditProps) -> Html {
+    let settings = use_context::<Settings>().expect("settings context cannot be found");
+
+    let book = use_state(|| None);
+
+    {
+        let book = book.clone();
+        let id = props.id;
+        let settings = settings.clone();
+        use_effect_with_deps(
+            move |_| {
+                let book = book.clone();
+                let settings = settings.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    let response: BooksDetailResponse = Request::get(
+                        settings
+                            .base_url
+                            .join(&format!("books/{}", id))
+                            .unwrap()
+                            .as_str(),
+                    )
+                    .send()
+                    .await
+                    .unwrap()
+                    .json()
+                    .await
+                    .unwrap();
+                    book.set(Some(response.book));
+                });
+                || ()
+            },
+            (),
+        );
+    }
+
+    let history = use_history().expect("history API encounters a critical error");
+    let on_back_click = {
+        let history = history.clone();
+        Callback::once(move |_| history.back())
+    };
+
+    let content = if let Some(book) = (*book).clone() {
+        let on_click = {
+            let settings = settings.clone();
+            let history = history.clone();
+            let id = props.id;
+            Callback::once(move |book| {
+                let settings = settings.clone();
+                let history = history.clone();
+                wasm_bindgen_futures::spawn_local(async move {
+                    let _response = Request::put(
+                        settings
+                            .base_url
+                            .join(&format!("books/{}", id))
+                            .unwrap()
+                            .as_str(),
+                    )
+                    .body(serde_json::json!(book).to_string())
+                    .header("content-type", "application/json")
+                    .send()
+                    .await
+                    .unwrap();
+                    history.push(Route::BookList);
+                });
+            })
+        };
+
+        html! {
+            <>
+                <SectionTitle title={ book.clone().title } />
+                <EditBookForm book={book.clone()} on_submit={on_click} />
+            </>
+        }
+    } else {
+        html! { <div>{ "読み込み中" } </div> }
+    };
+
+    html! {
+        <>
+            <Header />
+            <div class="container-lg">
+                { content }
+                <a href="#" class="d-block mt-2" onclick={on_back_click}>{ "前のページに戻る" }</a>
+            </div>
+            <Footer />
         </>
     }
 }

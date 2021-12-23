@@ -10,7 +10,7 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 use self::page::{
-    book::{BooksDetail, BooksListPage},
+    book::{BooksDetailPage, BooksEditPage, BooksListPage},
     error::NotFoundPage,
     home::HomePage,
 };
@@ -21,7 +21,8 @@ fn switch(routes: &Route) -> Html {
     match routes {
         Route::Home => html! { <HomePage /> },
         Route::BookList => html! { <BooksListPage /> },
-        Route::BookDetail { id } => html! { <BooksDetail id={id.clone()} /> },
+        Route::BookDetail { id } => html! { <BooksDetailPage id={id.clone()} /> },
+        Route::BookEdit { id } => html! { <BooksEditPage id={id.clone() } /> },
         _ => html! { <NotFoundPage /> },
     }
 }

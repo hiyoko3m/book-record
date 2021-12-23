@@ -5,7 +5,7 @@ use yew_router::prelude::*;
 
 use crate::atom::common::{ButtonSecondary, ModalButtonSecondary};
 
-#[derive(Clone, Default, PartialEq, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
 pub struct Book {
     pub id: usize,
     pub title: String,
@@ -141,6 +141,48 @@ pub fn create_book_form(CreateBookFormProps { on_submit }: &CreateBookFormProps)
                     </form>
                 </div>
             </div>
+        </>
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct EditBookFormProps {
+    pub on_submit: Callback<BookForSend>,
+    pub book: Book,
+}
+
+#[function_component(EditBookForm)]
+pub fn edit_book_form(EditBookFormProps { on_submit, book }: &EditBookFormProps) -> Html {
+    let title_ref = use_node_ref();
+    let on_edit = {
+        let title_ref = title_ref.clone();
+        let on_submit = on_submit.clone();
+        Callback::from(move |e: MouseEvent| {
+            e.prevent_default();
+            e.stop_propagation();
+
+            if let Some(title_input) = title_ref.cast::<HtmlInputElement>() {
+                let book = BookForSend {
+                    title: title_input.value(),
+                };
+                on_submit.emit(book);
+            }
+        })
+    };
+
+    html! {
+        <>
+                <div class="mx-2 mt-3 p-3 border border-2">
+                    <form class="row">
+                        <label for="title" class="col-sm-2 col-form-label">{ "タイトル" }</label>
+                        <div class="col-sm-10">
+                            <input ref={title_ref} type="text" class="form-control" id="title" value={ book.clone().title } />
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button type="submit" class="btn btn-primary" onclick={on_edit}>{ "編集" }</button>
+                        </div>
+                    </form>
+                </div>
         </>
     }
 }

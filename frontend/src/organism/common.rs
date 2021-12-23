@@ -9,9 +9,9 @@ pub fn header() -> Html {
         <header>
             <nav class="navbar navbar-light bg-light">
                 <div class="container-lg">
-                    <Link<Route> to={Route::Home} classes="navbar-brand">{ "Navbar" }</Link<Route>>
+                    <Link<Route> to={Route::Home} classes="navbar-brand">{ "読書記録" }</Link<Route>>
                     <div class="d-flex">
-                        <button class="btn" type="submit">{ "tmp" }</button>
+                        <button class="btn btn-primary" type="submit">{ "ログイン" }</button>
                     </div>
                 </div>
             </nav>
@@ -24,7 +24,7 @@ pub fn footer() -> Html {
     html! {
         <footer class="mt-5 p-5 bg-light text-center">
             <div class="container-lg">
-                { "footer" }
+                { "フッターのサンプル" }
             </div>
         </footer>
     }

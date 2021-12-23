@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+use crate::atom::common::SectionTitle;
 use crate::organism::common::{Footer, Header};
 use crate::routes::Route;
 
@@ -9,9 +10,10 @@ pub fn not_found() -> Html {
     html! {
         <>
             <Header />
-            <div>
-                <p>{ "Error" }</p>
-                <Link<Route> to={Route::Home}>{ "go to top" }</Link<Route>>
+            <div class="container-lg">
+                <SectionTitle title={"エラー"} />
+                <p class="mt-2">{ "指定されたページは存在しません" }</p>
+                <Link<Route> to={Route::Home}>{ "トップページに戻る" }</Link<Route>>
             </div>
             <Footer />
         </>
