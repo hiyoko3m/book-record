@@ -48,5 +48,5 @@ jobs:
 
     - name: Push
       run: |
-        aws s3 sync dist/ s3://${{ secrets.FRONT_BUCKET_NAME }}/dist/ \
+        aws s3 sync dist/ s3://${{ secrets.FRONT_BUCKET_NAME }}/dist/ --delete
       working-directory: ./frontend
