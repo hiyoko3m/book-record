@@ -10,7 +10,7 @@ pub fn book_app() -> Router {
         .route("/books", get(list_books).post(create_book))
         .route(
             "/books/:id",
-            get(get_book).post(update_book).delete(delete_book),
+            get(get_book).put(update_book).delete(delete_book),
         )
         .route(
             "/protected",
